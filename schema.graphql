@@ -1,0 +1,5 @@
+type Pool @entity {
+  id: ID!
+  base: Bytes!
+  fyToken: Bytes!
+}
