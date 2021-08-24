@@ -4,7 +4,7 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: Cauldron
-    network: mainnet
+    network: kovan
     source:
       address: "0x1dd1fc530ae658063ae78e595a95f8ed7c5b3496"
       abi: Cauldron
@@ -38,7 +38,7 @@ dataSources:
       file: ./src/cauldron.ts
   - kind: ethereum/contract
     name: PoolFactory
-    network: mainnet
+    network: kovan
     source:
       address: "0x1dd1fc530ae658063ae78e595a95f8ed7c5b3496"
       abi: PoolFactory
@@ -60,7 +60,7 @@ dataSources:
 templates:
   - name: Pool
     kind: ethereum/contract
-    network: mainnet
+    network: kovan
     source:
       abi: Pool
     mapping:
