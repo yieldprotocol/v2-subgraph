@@ -27,6 +27,14 @@ dataSources:
           handler: handleIlkAdded
         - event: VaultBuilt(indexed bytes12,indexed address,indexed bytes6,bytes6)
           handler: handleVaultBuilt
+        - event: VaultDestroyed(indexed bytes12)
+          handler: handleVaultDestroyed
+        - event: VaultPoured(indexed bytes12,indexed bytes6,indexed bytes6,int128,int128)
+          handler: handleVaultPoured
+        - event: VaultStirred(indexed bytes12,indexed bytes12,uint128,uint128)
+          handler: handleVaultStirred
+        - event: VaultRolled(indexed bytes12,indexed bytes6,uint128)
+          handler: handleVaultRolled
       file: ./src/cauldron.ts
   - kind: ethereum/contract
     name: PoolFactory

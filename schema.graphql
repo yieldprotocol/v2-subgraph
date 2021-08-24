@@ -9,7 +9,7 @@ type Asset @entity {
   address: Bytes!
 }
 
-type Ilk @entity {
+type Collateral @entity {
   id: ID!
   series: Series!
 }
@@ -18,7 +18,10 @@ type Vault @entity {
   id: ID!
   owner: Bytes!
   series: Series!
-  ilk: Ilk!
+  collateral: Collateral!
+
+  debtAmount: BigDecimal!
+  collateralAmount: BigDecimal!
 }
 
 type Pool @entity {
