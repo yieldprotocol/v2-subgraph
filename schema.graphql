@@ -1,3 +1,26 @@
+type Series @entity {
+  id: ID!
+  baseId: Bytes!
+  fyToken: Bytes!
+}
+
+type Asset @entity {
+  id: ID!
+  address: Bytes!
+}
+
+type Ilk @entity {
+  id: ID!
+  series: Series!
+}
+
+type Vault @entity {
+  id: ID!
+  owner: Bytes!
+  series: Series!
+  ilk: Ilk!
+}
+
 type Pool @entity {
   id: ID!
   base: Bytes!
