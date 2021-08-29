@@ -6,9 +6,9 @@ dataSources:
     name: Cauldron
     network: kovan
     source:
-      address: "0x1dd1fc530ae658063ae78e595a95f8ed7c5b3496"
+      address: "0x324ee27d5f5a7da8c926a5954cb86357b8e07f81"
       abi: Cauldron
-      startBlock: 26251478
+      startBlock: 26251454
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -27,6 +27,8 @@ dataSources:
           handler: handleIlkAdded
         - event: VaultBuilt(indexed bytes12,indexed address,indexed bytes6,bytes6)
           handler: handleVaultBuilt
+        - event: VaultTweaked(indexed bytes12,indexed bytes6,indexed bytes6)
+          handler: handleVaultTweaked
         - event: VaultDestroyed(indexed bytes12)
           handler: handleVaultDestroyed
         - event: VaultPoured(indexed bytes12,indexed bytes6,indexed bytes6,int128,int128)
@@ -35,6 +37,8 @@ dataSources:
           handler: handleVaultStirred
         - event: VaultRolled(indexed bytes12,indexed bytes6,uint128)
           handler: handleVaultRolled
+        - event: SeriesMatured(indexed bytes6,uint256)
+          handler: handleSeriesMatured
       file: ./src/cauldron.ts
   - kind: ethereum/contract
     name: PoolFactory

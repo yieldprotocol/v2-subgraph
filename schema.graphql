@@ -1,6 +1,6 @@
 type Series @entity {
   id: ID!
-  baseId: Bytes!
+  baseAsset: Asset!
   fyToken: Bytes!
 }
 
@@ -11,6 +11,7 @@ type Asset @entity {
 
 type Collateral @entity {
   id: ID!
+  asset: Asset!
   series: Series!
 }
 
