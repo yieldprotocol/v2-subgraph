@@ -31,10 +31,11 @@ type FYToken @entity {
   underlyingAddress: Bytes
   underlyingAsset: Asset!
   maturity: Int!
+  pools: [Pool!]! @derivedFrom(field: "fyToken")
 }
 
 type Pool @entity {
   id: ID!
   base: Bytes!
-  fyToken: Bytes!
+  fyToken: FYToken!
 }
