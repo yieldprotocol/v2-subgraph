@@ -60,6 +60,28 @@ dataSources:
         - event: PoolCreated(indexed address,indexed address,address)
           handler: handlePoolCreated
       file: ./src/pool-factory.ts
+  - kind: ethereum/contract
+    name: FYTokenFactory
+    network: kovan
+    source:
+      address: "0x5338339066337566d38a4d9dca82875fc40b510f"
+      abi: FYTokenFactory
+      startBlock: 26251482
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - FYToken
+      abis:
+        - name: FYTokenFactory
+          file: ./abis/FYTokenFactory.json
+        - name: FYToken
+          file: ./abis/FYToken.json
+      eventHandlers:
+        - event: FYTokenCreated(indexed address,indexed address,indexed uint32)
+          handler: handleFYTokenCreated
+      file: ./src/fytoken-factory.ts
 
 templates:
   - name: Pool
