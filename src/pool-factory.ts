@@ -8,7 +8,9 @@ export function handlePoolCreated(event: PoolCreated): void {
   pool.base = event.params.base
   pool.fyToken = event.params.fyToken.toHexString()
   pool.fyTokenReserves = ZERO.toBigDecimal()
+  pool.fyTokenVirtualReserves = ZERO.toBigDecimal()
   pool.baseReserves = ZERO.toBigDecimal()
+  pool.poolTokens = ZERO.toBigDecimal()
   pool.save()
 
   PoolTemplate.create(event.params.pool)

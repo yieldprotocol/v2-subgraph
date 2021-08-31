@@ -45,5 +45,8 @@ type Pool @entity {
   fyToken: FYToken!
 
   fyTokenReserves: BigDecimal!
+  fyTokenVirtualReserves: BigDecimal!
   baseReserves: BigDecimal!
+
+  poolTokens: BigDecimal!
 }
