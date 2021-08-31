@@ -10,3 +10,7 @@ export let ONE: BigInt = BigInt.fromI32(1)
 export function bigIntToFloat(num: BigInt, decimals: u8, percision: u8): f64 {
   return (num.div(BigInt.fromI32(10).pow(decimals - percision)).toI32() as f64) / Math.pow(10, percision)
 }
+
+export function toDecimal(num: BigInt, decimals: i32): BigDecimal {
+  return num.divDecimal(BigInt.fromI32(10).pow(decimals as u8).toBigDecimal());
+}

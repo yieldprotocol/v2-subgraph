@@ -2,6 +2,7 @@ import { store, Bytes } from '@graphprotocol/graph-ts'
 import {
   Cauldron, AssetAdded, SeriesAdded, IlkAdded, VaultBuilt, VaultTweaked, VaultPoured, VaultStirred, VaultRolled
 } from "../generated/Cauldron/Cauldron"
+import { IERC20 } from "../generated/Cauldron/IERC20"
 import { Asset, Collateral, Series, Vault } from "../generated/schema"
 import { EIGHTEEN_DECIMALS, ZERO } from './lib'
 
@@ -10,8 +11,12 @@ function collateralId(seriesId: Bytes, ilkId: Bytes): string {
 }
 
 export function handleAssetAdded(event: AssetAdded): void {
+  let tokenContract = IERC20.bind(event.params.asset)
+
   let asset = new Asset(event.params.assetId.toHexString())
   asset.address = event.params.asset
+  asset.name = tokenContract.name()
+  asset.symbol = tokenContract.symbol()
 
   asset.save()
 }

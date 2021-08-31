@@ -7,6 +7,8 @@ type Series @entity {
 type Asset @entity {
   id: ID!
   address: Bytes!
+  name: String!
+  symbol: String!
   fyTokens: [FYToken!]! @derivedFrom(field: "underlyingAsset")
 }
 
@@ -28,9 +30,12 @@ type Vault @entity {
 
 type FYToken @entity {
   id: ID!
+  name: String!
+  symbol: String!
   underlyingAddress: Bytes
   underlyingAsset: Asset!
   maturity: Int!
+  decimals: Int!
   pools: [Pool!]! @derivedFrom(field: "fyToken")
 }
 
