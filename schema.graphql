@@ -10,6 +10,8 @@ type Asset @entity {
   name: String!
   symbol: String!
   fyTokens: [FYToken!]! @derivedFrom(field: "underlyingAsset")
+
+  totalTradingVolume: BigDecimal!
 }
 
 type Collateral @entity {
@@ -50,5 +52,6 @@ type Pool @entity {
 
   poolTokens: BigDecimal!
 
+  totalVolumeInBase: BigDecimal!
   totalTradingFeesInBase: BigDecimal!
 }

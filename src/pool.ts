@@ -1,6 +1,6 @@
 import { BigInt, BigDecimal } from '@graphprotocol/graph-ts'
 import { Sync, Trade as TradeEvent, Liquidity as LiquidityEvent } from "../generated/templates/Pool/Pool"
-import { Pool, FYToken } from "../generated/schema"
+import { Asset, Pool, FYToken } from "../generated/schema"
 import { EIGHTEEN_DECIMALS, toDecimal, ZERO } from "./lib"
 
 let SECONDS_PER_YEAR: f64 = 365 * 24 * 60 * 60
@@ -80,6 +80,7 @@ export function handleSync(event: Sync): void {
 export function handleTrade(event: TradeEvent): void {
   let pool = Pool.load(event.address.toHexString())
   let fyToken = FYToken.load(pool.fyToken)
+  let baseToken = Asset.load(fyToken.underlyingAsset)
 
   let timeTillMaturity = fyToken.maturity - event.block.timestamp.toI32()
   pool.totalTradingFeesInBase += getFee(
@@ -88,7 +89,17 @@ export function handleTrade(event: TradeEvent): void {
     timeTillMaturity,
     toDecimal(event.params.fyTokens, fyToken.decimals)
   )
+
+  let baseVolume = toDecimal(event.params.bases, fyToken.decimals)
+  if (baseVolume.lt(ZERO.toBigDecimal())) {
+    baseVolume = baseVolume.neg()
+  }
+  pool.totalVolumeInBase += baseVolume
+
+  baseToken.totalTradingVolume += baseVolume
+
   pool.save()
+  baseToken.save()
 }
 
 export function handleLiquity(event: LiquidityEvent): void {

@@ -18,6 +18,8 @@ export function handleAssetAdded(event: AssetAdded): void {
   asset.name = tokenContract.name()
   asset.symbol = tokenContract.symbol()
 
+  asset.totalTradingVolume = ZERO.toBigDecimal()
+
   asset.save()
 }
 
