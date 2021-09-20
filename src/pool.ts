@@ -1,5 +1,10 @@
-import { BigInt, BigDecimal } from '@graphprotocol/graph-ts'
-import { Sync, Trade as TradeEvent, Liquidity as LiquidityEvent } from "../generated/templates/Pool/Pool"
+import { Address, BigInt, BigDecimal } from '@graphprotocol/graph-ts'
+import {
+  Pool as PoolContract,
+  Sync,
+  Trade as TradeEvent,
+  Liquidity as LiquidityEvent
+} from "../generated/templates/Pool/Pool"
 import { Asset, Pool, FYToken } from "../generated/schema"
 import { EIGHTEEN_DECIMALS, toDecimal, ZERO } from "./lib"
 
@@ -66,20 +71,70 @@ function getFee(
   return BigDecimal.fromString(fee.toString())
 }
 
+function updatePool(fyToken: FYToken, pool: Pool, poolAddress: Address, timestamp: i32): void {
+  // Subtract the previous pool TLV. We'll add the updated value back after recalculating it
+  // yieldSingleton.poolTLVInDai -= (fyToken.poolDaiReserves + fyToken.poolFYDaiValueInDai)
+
+  // let fyDaiContract = FYDaiContract.bind(pool.fyDai())
+  let poolContract = PoolContract.bind(poolAddress)
+
+  // fyToken.poolFYDaiReservesWei = fyDaiContract.balanceOf(pool._address)
+  // fyToken.poolFYDaiReserves = fyToken.poolFYDaiReservesWei.toBigDecimal().div(EIGHTEEN_DECIMALS)
+  // fyToken.poolFYDaiVirtualReservesWei = pool.getFYDaiReserves()
+  // fyToken.poolDaiReservesWei = pool.getDaiReserves()
+  // fyToken.poolDaiReserves = fyToken.poolDaiReservesWei.toBigDecimal().div(EIGHTEEN_DECIMALS)
+
+  let fyDaiPriceInBase: BigDecimal
+  if (fyToken.maturity < timestamp) {
+    fyDaiPriceInBase = BigInt.fromI32(1).toBigDecimal()
+  } else {
+    let buyPriceResult = poolContract.try_sellFYTokenPreview(BigInt.fromI32(10).pow((fyToken.decimals as u8) - 2))
+
+    if (buyPriceResult.reverted) {
+      fyDaiPriceInBase = BigInt.fromI32(0).toBigDecimal()
+    } else {
+      fyDaiPriceInBase = toDecimal(buyPriceResult.value * BigInt.fromI32(100), fyToken.decimals)
+    }
+  }
+  pool.currentFYTokenPriceInBase = fyDaiPriceInBase
+
+  pool.apr = yieldAPR(parseFloat(fyDaiPriceInBase.toString()), fyToken.maturity - timestamp)
+}
+
+// Adapted from https://github.com/yieldprotocol/fyDai-frontend/blob/master/src/hooks/mathHooks.ts#L219
+function yieldAPR(fyDaiPriceInBase: f64, timeTillMaturity: i32): BigDecimal {
+  if (timeTillMaturity < 0) {
+    return ZERO.toBigDecimal()
+  }
+
+  let propOfYear = (timeTillMaturity as f64) / SECONDS_PER_YEAR
+  let priceRatio = 1 / fyDaiPriceInBase
+  let powRatio = 1 / propOfYear
+  let apr = Math.pow(priceRatio, powRatio) - 1
+
+  if (apr > 0 && apr < 100) {
+    let aprPercent = apr * 100
+    return BigDecimal.fromString(aprPercent.toString())
+  }
+  return ZERO.toBigDecimal()
+}
+
 export function handleSync(event: Sync): void {
-  let pool = Pool.load(event.address.toHexString())
-  let fyToken = FYToken.load(pool.fyToken)
+  let pool = Pool.load(event.address.toHexString())!
+  let fyToken = FYToken.load(pool.fyToken)!
 
   pool.fyTokenReserves = toDecimal(event.params.fyTokenCached, fyToken.decimals) - pool.poolTokens
   pool.fyTokenVirtualReserves = toDecimal(event.params.fyTokenCached, fyToken.decimals)
   pool.baseReserves = toDecimal(event.params.baseCached, fyToken.decimals)
 
+  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32())
+
   pool.save()
 }
 
 export function handleTrade(event: TradeEvent): void {
-  let pool = Pool.load(event.address.toHexString())
-  let fyToken = FYToken.load(pool.fyToken)
+  let pool = Pool.load(event.address.toHexString())!
+  let fyToken = FYToken.load(pool.fyToken)!
   let baseToken = Asset.load(fyToken.underlyingAsset)
 
   let timeTillMaturity = fyToken.maturity - event.block.timestamp.toI32()
@@ -98,16 +153,20 @@ export function handleTrade(event: TradeEvent): void {
 
   baseToken.totalTradingVolume += baseVolume
 
+  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32())
+
   pool.save()
   baseToken.save()
 }
 
 export function handleLiquity(event: LiquidityEvent): void {
-  let pool = Pool.load(event.address.toHexString())
-  let fyToken = FYToken.load(pool.fyToken)
+  let pool = Pool.load(event.address.toHexString())!
+  let fyToken = FYToken.load(pool.fyToken)!
 
   pool.fyTokenReserves -= toDecimal(event.params.poolTokens, fyToken.decimals)
   pool.poolTokens += toDecimal(event.params.poolTokens, fyToken.decimals)
+
+  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32())
 
   pool.save()
 }
