@@ -11,6 +11,7 @@ export function handlePoolCreated(event: PoolCreated): void {
   pool.fyTokenVirtualReserves = ZERO.toBigDecimal()
   pool.baseReserves = ZERO.toBigDecimal()
   pool.poolTokens = ZERO.toBigDecimal()
+  pool.totalTradingFeesInBase = ZERO.toBigDecimal()
   pool.save()
 
   PoolTemplate.create(event.params.pool)

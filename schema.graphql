@@ -49,4 +49,6 @@ type Pool @entity {
   baseReserves: BigDecimal!
 
   poolTokens: BigDecimal!
+
+  totalTradingFeesInBase: BigDecimal!
 }
