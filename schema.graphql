@@ -1,7 +1,7 @@
 type Series @entity {
   id: ID!
   baseAsset: Asset!
-  fyToken: Bytes!
+  fyToken: FYToken!
 }
 
 type Asset @entity {

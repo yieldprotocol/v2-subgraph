@@ -26,7 +26,7 @@ export function handleAssetAdded(event: AssetAdded): void {
 export function handleSeriesAdded(event: SeriesAdded): void {
   let series = new Series(event.params.seriesId.toHexString())
   series.baseAsset = event.params.baseId.toHexString()
-  series.fyToken = event.params.fyToken
+  series.fyToken = event.params.fyToken.toHexString()
 
   series.save()
 }
