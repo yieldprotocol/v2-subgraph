@@ -5,7 +5,7 @@ import {
   Trade as TradeEvent,
   Liquidity as LiquidityEvent
 } from "../generated/templates/Pool/Pool"
-import { Asset, Pool, FYToken } from "../generated/schema"
+import { Asset, Pool, FYToken, Trade } from "../generated/schema"
 import { EIGHTEEN_DECIMALS, toDecimal, ZERO } from "./lib"
 
 let SECONDS_PER_YEAR: f64 = 365 * 24 * 60 * 60
@@ -75,14 +75,7 @@ function updatePool(fyToken: FYToken, pool: Pool, poolAddress: Address, timestam
   // Subtract the previous pool TLV. We'll add the updated value back after recalculating it
   // yieldSingleton.poolTLVInDai -= (fyToken.poolDaiReserves + fyToken.poolFYDaiValueInDai)
 
-  // let fyDaiContract = FYDaiContract.bind(pool.fyDai())
   let poolContract = PoolContract.bind(poolAddress)
-
-  // fyToken.poolFYDaiReservesWei = fyDaiContract.balanceOf(pool._address)
-  // fyToken.poolFYDaiReserves = fyToken.poolFYDaiReservesWei.toBigDecimal().div(EIGHTEEN_DECIMALS)
-  // fyToken.poolFYDaiVirtualReservesWei = pool.getFYDaiReserves()
-  // fyToken.poolDaiReservesWei = pool.getDaiReserves()
-  // fyToken.poolDaiReserves = fyToken.poolDaiReservesWei.toBigDecimal().div(EIGHTEEN_DECIMALS)
 
   let fyDaiPriceInBase: BigDecimal
   if (fyToken.maturity < timestamp) {
@@ -138,12 +131,13 @@ export function handleTrade(event: TradeEvent): void {
   let baseToken = Asset.load(fyToken.underlyingAsset)
 
   let timeTillMaturity = fyToken.maturity - event.block.timestamp.toI32()
-  pool.totalTradingFeesInBase += getFee(
+  let fee = getFee(
     pool.fyTokenVirtualReserves,
     pool.baseReserves,
     timeTillMaturity,
     toDecimal(event.params.fyTokens, fyToken.decimals)
   )
+  pool.totalTradingFeesInBase += fee
 
   let baseVolume = toDecimal(event.params.bases, fyToken.decimals)
   if (baseVolume.lt(ZERO.toBigDecimal())) {
@@ -155,8 +149,18 @@ export function handleTrade(event: TradeEvent): void {
 
   updatePool(fyToken, pool, event.address, event.block.timestamp.toI32())
 
+  let trade = new Trade(event.transaction.hash.toHex() + "-" + event.logIndex.toString())
+  trade.timestamp = event.block.timestamp
+  trade.pool = event.address.toHexString()
+  trade.from = event.params.from
+  trade.to = event.params.to
+  trade.amountBaseToken = toDecimal(event.params.bases, baseToken.decimals)
+  trade.amountFYToken = toDecimal(event.params.fyTokens, baseToken.decimals)
+  trade.feeInBase = fee
+
   pool.save()
   baseToken.save()
+  trade.save()
 }
 
 export function handleLiquity(event: LiquidityEvent): void {

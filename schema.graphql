@@ -59,3 +59,18 @@ type Pool @entity {
   totalVolumeInBase: BigDecimal!
   totalTradingFeesInBase: BigDecimal!
 }
+
+# Events
+
+type Trade @entity {
+  id: ID!
+  timestamp: BigInt!
+  pool: Pool!
+  from: Bytes!
+  to: Bytes!
+
+  amountBaseToken: BigDecimal!
+  amountFYToken: BigDecimal!
+
+  feeInBase: BigDecimal!
+}
