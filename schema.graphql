@@ -9,6 +9,8 @@ type Asset @entity {
   address: Bytes!
   name: String!
   symbol: String!
+  decimals: Int!
+
   fyTokens: [FYToken!]! @derivedFrom(field: "underlyingAsset")
 
   totalTradingVolume: BigDecimal!

@@ -4,7 +4,7 @@ import {
 } from "../generated/Cauldron/Cauldron"
 import { IERC20 } from "../generated/Cauldron/IERC20"
 import { Asset, Collateral, Series, Vault } from "../generated/schema"
-import { EIGHTEEN_DECIMALS, ZERO } from './lib'
+import { EIGHTEEN_DECIMALS, ZERO, toDecimal } from './lib'
 
 function collateralId(seriesId: Bytes, ilkId: Bytes): string {
   return seriesId.toHexString() + '-' + ilkId.toHexString()
@@ -17,6 +17,7 @@ export function handleAssetAdded(event: AssetAdded): void {
   asset.address = event.params.asset
   asset.name = tokenContract.name()
   asset.symbol = tokenContract.symbol()
+  asset.decimals = tokenContract.decimals()
 
   asset.totalTradingVolume = ZERO.toBigDecimal()
 
@@ -63,10 +64,13 @@ export function handleVaultDestroyed(event: VaultBuilt): void {
 
 export function handleVaultPoured(event: VaultPoured): void {
   let vault = Vault.load(event.params.vaultId.toHexString())
+  let collateral = Collateral.load(vault.collateral)
+  let series = Series.load(vault.series)
+  let seriesAsset = Asset.load(series.baseAsset)
+  let collateralAsset = Asset.load(collateral.asset)
 
-  // TODO: proper decimals
-  vault.debtAmount += event.params.art.divDecimal(EIGHTEEN_DECIMALS)
-  vault.collateralAmount += event.params.ink.divDecimal(EIGHTEEN_DECIMALS)
+  vault.debtAmount += toDecimal(event.params.art, seriesAsset.decimals)
+  vault.collateralAmount += toDecimal(event.params.ink, collateralAsset.decimals)
 
   vault.save()
 }
@@ -75,11 +79,15 @@ export function handleVaultStirred(event: VaultStirred): void {
   let fromVault = Vault.load(event.params.from.toHexString())
   let toVault = Vault.load(event.params.to.toHexString())
 
-  // TODO: proper decimals
-  fromVault.debtAmount -= event.params.art.divDecimal(EIGHTEEN_DECIMALS)
-  fromVault.collateralAmount -= event.params.ink.divDecimal(EIGHTEEN_DECIMALS)
-  toVault.debtAmount += event.params.art.divDecimal(EIGHTEEN_DECIMALS)
-  toVault.collateralAmount += event.params.ink.divDecimal(EIGHTEEN_DECIMALS)
+  let collateral = Collateral.load(fromVault.collateral)
+  let series = Series.load(fromVault.series)
+  let seriesAsset = Asset.load(series.baseAsset)
+  let collateralAsset = Asset.load(collateral.asset)
+
+  fromVault.debtAmount -= toDecimal(event.params.art, seriesAsset.decimals)
+  fromVault.collateralAmount -= toDecimal(event.params.ink, collateralAsset.decimals)
+  toVault.debtAmount += toDecimal(event.params.art, seriesAsset.decimals)
+  toVault.collateralAmount += toDecimal(event.params.ink, collateralAsset.decimals)
 
   fromVault.save()
   toVault.save()
