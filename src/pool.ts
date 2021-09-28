@@ -115,10 +115,28 @@ function yieldAPR(fyDaiPriceInBase: f64, timeTillMaturity: i32): BigDecimal {
 export function handleSync(event: Sync): void {
   let pool = Pool.load(event.address.toHexString())!
   let fyToken = FYToken.load(pool.fyToken)!
+  let baseToken: Asset
+
+  // It's possible to create a pool with an asset other than the fyToken's underlying
+  // In that case, we skip tracking the base TVL
+  if (fyToken.underlyingAddress == pool.base) {
+    baseToken = Asset.load(fyToken.underlyingAsset)!
+    baseToken.totalInPools -= pool.baseReserves
+  }
+
+  fyToken.totalInPools -= pool.fyTokenReserves
 
   pool.fyTokenReserves = toDecimal(event.params.fyTokenCached, fyToken.decimals) - pool.poolTokens
   pool.fyTokenVirtualReserves = toDecimal(event.params.fyTokenCached, fyToken.decimals)
   pool.baseReserves = toDecimal(event.params.baseCached, fyToken.decimals)
+
+  fyToken.totalInPools += pool.fyTokenReserves
+  fyToken.save()
+
+  if (baseToken) {
+    baseToken.totalInPools += pool.baseReserves
+    baseToken.save()
+  }
 
   updatePool(fyToken, pool, event.address, event.block.timestamp.toI32())
 

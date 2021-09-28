@@ -13,7 +13,10 @@ type Asset @entity {
 
   fyTokens: [FYToken!]! @derivedFrom(field: "underlyingAsset")
 
+  totalCollateral: BigDecimal!
+  totalDebt: BigDecimal!
   totalTradingVolume: BigDecimal!
+  totalInPools: BigDecimal!
 }
 
 type Collateral @entity {
@@ -41,6 +44,8 @@ type FYToken @entity {
   maturity: Int!
   decimals: Int!
   pools: [Pool!]! @derivedFrom(field: "fyToken")
+
+  totalInPools: BigDecimal!
 }
 
 type Pool @entity {
