@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: Cauldron
-    network: mainnet
+    network: kovan
     source:
-      address: "0xc88191F8cb8e6D4a668B047c1C8503432c3Ca867"
+      address: "0x324ee27d5f5a7da8c926a5954cb86357b8e07f81"
       abi: Cauldron
-      startBlock: 13450000
+      startBlock: 26251454
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -44,11 +44,11 @@ dataSources:
       file: ./src/cauldron.ts
   - kind: ethereum/contract
     name: PoolFactory
-    network: mainnet
+    network: kovan
     source:
-      address: "0xe4D5A6128308b4D5c5d1A107Be136AB75c9944Be"
+      address: "0x1dd1fc530ae658063ae78e595a95f8ed7c5b3496"
       abi: PoolFactory
-      startBlock: 13450000
+      startBlock: 26251478
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -64,11 +64,11 @@ dataSources:
       file: ./src/pool-factory.ts
   - kind: ethereum/contract
     name: FYTokenFactory
-    network: mainnet
+    network: kovan
     source:
-      address: "0xA718fF3fA10fA9F797e98E35fd3A0bEc9e0AA67c"
+      address: "0x5338339066337566d38a4d9dca82875fc40b510f"
       abi: FYTokenFactory
-      startBlock: 13450000
+      startBlock: 26251482
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -88,7 +88,7 @@ dataSources:
 templates:
   - name: Pool
     kind: ethereum/contract
-    network: mainnet
+    network: kovan
     source:
       abi: Pool
     mapping:
