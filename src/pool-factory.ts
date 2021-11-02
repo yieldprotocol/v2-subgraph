@@ -17,6 +17,7 @@ export function handlePoolCreated(event: PoolCreated): void {
 
   pool.totalVolumeInBase = ZERO.toBigDecimal()
   pool.totalTradingFeesInBase = ZERO.toBigDecimal()
+  pool.tvlInBase = ZERO.toBigDecimal()
   pool.save()
 
   PoolTemplate.create(event.params.pool)

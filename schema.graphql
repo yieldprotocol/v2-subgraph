@@ -63,6 +63,8 @@ type Pool @entity {
 
   totalVolumeInBase: BigDecimal!
   totalTradingFeesInBase: BigDecimal!
+
+  tvlInBase: BigDecimal!
 }
 
 # Events

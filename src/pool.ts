@@ -90,6 +90,7 @@ function updatePool(fyToken: FYToken, pool: Pool, poolAddress: Address, timestam
     }
   }
   pool.currentFYTokenPriceInBase = fyDaiPriceInBase
+  pool.tvlInBase = pool.baseReserves + (pool.fyTokenReserves * pool.currentFYTokenPriceInBase)
 
   pool.apr = yieldAPR(parseFloat(fyDaiPriceInBase.toString()), fyToken.maturity - timestamp)
 }
