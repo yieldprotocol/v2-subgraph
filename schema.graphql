@@ -1,4 +1,5 @@
-type Series @entity {
+# we have to add "Entity" since Series can't be pluralized
+type SeriesEntity @entity {
   id: ID!
   baseAsset: Asset!
   fyToken: FYToken!
@@ -22,13 +23,13 @@ type Asset @entity {
 type Collateral @entity {
   id: ID!
   asset: Asset!
-  series: Series!
+  series: SeriesEntity!
 }
 
 type Vault @entity {
   id: ID!
   owner: Bytes!
-  series: Series!
+  series: SeriesEntity!
   collateral: Collateral!
 
   debtAmount: BigDecimal!

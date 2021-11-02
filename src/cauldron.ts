@@ -3,7 +3,7 @@ import {
   Cauldron, AssetAdded, SeriesAdded, IlkAdded, VaultBuilt, VaultTweaked, VaultPoured, VaultStirred, VaultRolled
 } from "../generated/Cauldron/Cauldron"
 import { IERC20 } from "../generated/Cauldron/IERC20"
-import { Asset, Collateral, Series, Vault } from "../generated/schema"
+import { Asset, Collateral, SeriesEntity, Vault } from "../generated/schema"
 import { EIGHTEEN_DECIMALS, ZERO, toDecimal } from './lib'
 
 function collateralId(seriesId: Bytes, ilkId: Bytes): string {
@@ -28,7 +28,7 @@ export function handleAssetAdded(event: AssetAdded): void {
 }
 
 export function handleSeriesAdded(event: SeriesAdded): void {
-  let series = new Series(event.params.seriesId.toHexString())
+  let series = new SeriesEntity(event.params.seriesId.toHexString())
   series.baseAsset = event.params.baseId.toHexString()
   series.fyToken = event.params.fyToken.toHexString()
 
@@ -68,7 +68,7 @@ export function handleVaultDestroyed(event: VaultBuilt): void {
 export function handleVaultPoured(event: VaultPoured): void {
   let vault = Vault.load(event.params.vaultId.toHexString())
   let collateral = Collateral.load(vault.collateral)
-  let series = Series.load(vault.series)
+  let series = SeriesEntity.load(vault.series)
   let seriesAsset = Asset.load(series.baseAsset)
   let collateralAsset = Asset.load(collateral.asset)
 
@@ -88,7 +88,7 @@ export function handleVaultStirred(event: VaultStirred): void {
   let toVault = Vault.load(event.params.to.toHexString())
 
   let collateral = Collateral.load(fromVault.collateral)
-  let series = Series.load(fromVault.series)
+  let series = SeriesEntity.load(fromVault.series)
   let seriesAsset = Asset.load(series.baseAsset)
   let collateralAsset = Asset.load(collateral.asset)
 
