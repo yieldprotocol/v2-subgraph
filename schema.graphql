@@ -3,6 +3,7 @@ type SeriesEntity @entity {
   id: ID!
   baseAsset: Asset!
   fyToken: FYToken!
+  maturity: Int!
 }
 
 type Asset @entity {

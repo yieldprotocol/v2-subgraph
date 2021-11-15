@@ -3,7 +3,7 @@ import {
   Cauldron, AssetAdded, SeriesAdded, IlkAdded, VaultBuilt, VaultTweaked, VaultPoured, VaultStirred, VaultRolled
 } from "../generated/Cauldron/Cauldron"
 import { IERC20 } from "../generated/Cauldron/IERC20"
-import { Asset, Collateral, SeriesEntity, Vault } from "../generated/schema"
+import { Asset, Collateral, SeriesEntity, Vault, FYToken } from "../generated/schema"
 import { EIGHTEEN_DECIMALS, ZERO, toDecimal } from './lib'
 
 function collateralId(seriesId: Bytes, ilkId: Bytes): string {
@@ -31,6 +31,9 @@ export function handleSeriesAdded(event: SeriesAdded): void {
   let series = new SeriesEntity(event.params.seriesId.toHexString())
   series.baseAsset = event.params.baseId.toHexString()
   series.fyToken = event.params.fyToken.toHexString()
+
+  let fyToken = FYToken.load(event.params.fyToken.toHexString())
+  series.maturity = fyToken ? fyToken.maturity : 0
 
   series.save()
 }
