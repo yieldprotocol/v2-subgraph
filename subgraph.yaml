@@ -108,3 +108,21 @@ templates:
           handler: handleLiquity
         - event: Sync(uint112,uint112,uint256)
           handler: handleSync
+  - name: FYToken
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: FYToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      file: ./src/fytoken.ts
+      entities:
+        - FYToken
+      abis:
+        - name: FYToken
+          file: ./abis/FYToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
