@@ -71,6 +71,29 @@ function getFee(
   return BigDecimal.fromString(fee.toString())
 }
 
+let ts = 10 * 365 * 24 * 60 * 60 // Seconds in 10 years
+
+function calculateInvariant(
+  baseReserves: BigDecimal,
+  fyTokenVirtualReserves: BigDecimal,
+  totalSupply: BigDecimal,
+  timeTillMaturity: i32
+): BigDecimal {
+  if (totalSupply == ZERO.toBigDecimal()) {
+    return ZERO.toBigDecimal()
+  }
+
+  let fyTokenVirtualReservesDecimal = parseFloat(fyTokenVirtualReserves.toString())
+  let baseReservesDecimal = parseFloat(baseReserves.toString())
+  let totalSupplyDecimal = parseFloat(totalSupply.toString())
+
+  let a = 1 - (timeTillMaturity / ts)
+  let sum = (Math.pow(baseReservesDecimal, a) + Math.pow(fyTokenVirtualReservesDecimal, a)) / 2
+  let result = Math.pow(sum, (1 / a)) / totalSupplyDecimal
+
+  return BigDecimal.fromString(result.toString())
+}
+
 function updatePool(fyToken: FYToken, pool: Pool, poolAddress: Address, timestamp: i32): void {
   // Subtract the previous pool TLV. We'll add the updated value back after recalculating it
   // yieldSingleton.poolTLVInDai -= (fyToken.poolDaiReserves + fyToken.poolFYDaiValueInDai)
@@ -92,7 +115,14 @@ function updatePool(fyToken: FYToken, pool: Pool, poolAddress: Address, timestam
   pool.currentFYTokenPriceInBase = fyDaiPriceInBase
   pool.tvlInBase = pool.baseReserves + (pool.fyTokenReserves * pool.currentFYTokenPriceInBase)
 
-  pool.apr = yieldAPR(parseFloat(fyDaiPriceInBase.toString()), fyToken.maturity - timestamp)
+  let timeTillMaturity = fyToken.maturity < timestamp ? 0 : fyToken.maturity - timestamp
+  pool.apr = yieldAPR(parseFloat(fyDaiPriceInBase.toString()), timeTillMaturity)
+  pool.invariant = calculateInvariant(
+    pool.baseReserves,
+    pool.fyTokenVirtualReserves,
+    pool.poolTokens,
+    timeTillMaturity
+  )
 }
 
 // Adapted from https://github.com/yieldprotocol/fyDai-frontend/blob/master/src/hooks/mathHooks.ts#L219

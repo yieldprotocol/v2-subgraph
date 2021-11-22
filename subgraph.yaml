@@ -104,7 +104,7 @@ templates:
       eventHandlers:
         - event: Trade(uint32,indexed address,indexed address,int256,int256)
           handler: handleTrade
-        - event: Liquidity(uint32,indexed address,indexed address,int256,int256,int256)
+        - event: Liquidity(uint32,indexed address,indexed address,indexed address,int256,int256,int256)
           handler: handleLiquity
         - event: Sync(uint112,uint112,uint256)
           handler: handleSync

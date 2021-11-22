@@ -68,6 +68,8 @@ type Pool @entity {
   totalTradingFeesInBase: BigDecimal!
 
   tvlInBase: BigDecimal!
+
+  invariant: BigDecimal!
 }
 
 # Events

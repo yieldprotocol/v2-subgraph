@@ -1,7 +1,7 @@
 import { PoolFactory, PoolCreated } from "../generated/PoolFactory/PoolFactory"
 import { Pool } from "../generated/schema"
 import { Pool as PoolTemplate } from '../generated/templates'
-import { ZERO } from "./lib"
+import { ZERO, ONE } from "./lib"
 
 export function handlePoolCreated(event: PoolCreated): void {
   let pool = new Pool(event.params.pool.toHexString())
@@ -18,6 +18,7 @@ export function handlePoolCreated(event: PoolCreated): void {
   pool.totalVolumeInBase = ZERO.toBigDecimal()
   pool.totalTradingFeesInBase = ZERO.toBigDecimal()
   pool.tvlInBase = ZERO.toBigDecimal()
+  pool.invariant = ONE.toBigDecimal()
   pool.save()
 
   PoolTemplate.create(event.params.pool)
