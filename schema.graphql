@@ -8,7 +8,7 @@ type SeriesEntity @entity {
 
 type Asset @entity {
   id: ID!
-  address: Bytes!
+  assetId: Bytes!
   name: String!
   symbol: String!
   decimals: Int!
@@ -41,8 +41,9 @@ type FYToken @entity {
   id: ID!
   name: String!
   symbol: String!
-  underlyingAddress: Bytes!
+  underlyingAddress: Bytes
   underlyingAsset: Asset
+  underlyingAssetId: Bytes
   maturity: Int!
   decimals: Int!
   totalSupply: BigDecimal!

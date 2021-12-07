@@ -11,7 +11,8 @@ export function handleFYTokenCreated(event: FYTokenCreated): void {
   fyToken.name = fyTokenContract.name()
   fyToken.symbol = fyTokenContract.symbol()
   fyToken.underlyingAddress = event.params.asset
-  fyToken.underlyingAsset = fyTokenContract.underlyingId().toHexString()
+  fyToken.underlyingAsset = event.params.asset.toHexString()
+  fyToken.underlyingAssetId = fyTokenContract.underlyingId()
   fyToken.maturity = event.params.maturity.toI32()
   fyToken.decimals = fyTokenContract.decimals()
   fyToken.totalSupply = ZERO.toBigDecimal()
