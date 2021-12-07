@@ -68,6 +68,9 @@ function getFee(
     let daiWithoutFee = sellFYDai(fyDaiReservesDecimal, daiReservesDecimal, timeTillMaturity, -fyDaiDecimal, gNoFee)
     fee = daiWithoutFee - daiWithFee
   }
+  if (fee.toString() == 'NaN') {
+    return ZERO.toBigDecimal()
+  }
   return BigDecimal.fromString(fee.toString())
 }
 

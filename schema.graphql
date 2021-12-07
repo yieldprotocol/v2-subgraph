@@ -41,8 +41,8 @@ type FYToken @entity {
   id: ID!
   name: String!
   symbol: String!
-  underlyingAddress: Bytes
-  underlyingAsset: Asset!
+  underlyingAddress: Bytes!
+  underlyingAsset: Asset
   maturity: Int!
   decimals: Int!
   totalSupply: BigDecimal!
