@@ -1,6 +1,6 @@
 import { store, Address, Bytes } from '@graphprotocol/graph-ts'
 import {
-  Cauldron, AssetAdded, SeriesAdded, IlkAdded, VaultBuilt, VaultTweaked, VaultPoured, VaultStirred, VaultRolled
+  Cauldron, AssetAdded, SeriesAdded, IlkAdded, VaultBuilt, VaultTweaked, VaultPoured, VaultStirred, VaultRolled, SeriesMatured
 } from "../generated/Cauldron/Cauldron"
 import { IERC20 } from "../generated/Cauldron/IERC20"
 import { Asset, Collateral, SeriesEntity, Vault, FYToken } from "../generated/schema"
@@ -36,6 +36,7 @@ export function handleSeriesAdded(event: SeriesAdded): void {
   let series = new SeriesEntity(event.params.seriesId.toHexString())
   series.baseAsset = assetIdToAddress(event.address, event.params.baseId).toHexString()
   series.fyToken = event.params.fyToken.toHexString()
+  series.matured = false
 
   let fyToken = FYToken.load(event.params.fyToken.toHexString())
   series.maturity = fyToken ? fyToken.maturity : 0
@@ -116,4 +117,11 @@ export function handleVaultRolled(event: VaultRolled): void {
   vault.series = event.params.seriesId.toHexString()
 
   vault.save()
+}
+
+export function handleSeriesMatured(event: SeriesMatured): void {
+  let series = SeriesEntity.load(event.params.seriesId.toHexString())
+  series.matured = true
+
+  series.save()
 }

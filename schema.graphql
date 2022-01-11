@@ -4,6 +4,7 @@ type SeriesEntity @entity {
   baseAsset: Asset!
   fyToken: FYToken!
   maturity: Int!
+  matured: Boolean!
 }
 
 type Asset @entity {
