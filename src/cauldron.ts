@@ -24,6 +24,7 @@ export function handleAssetAdded(event: AssetAdded): void {
   asset.symbol = tokenContract.symbol()
   asset.decimals = tokenContract.decimals()
 
+  asset.totalFYTokens = ZERO.toBigDecimal()
   asset.totalCollateral = ZERO.toBigDecimal()
   asset.totalDebt = ZERO.toBigDecimal()
   asset.totalTradingVolume = ZERO.toBigDecimal()
@@ -84,7 +85,7 @@ export function handleVaultPoured(event: VaultPoured): void {
   vault.debtAmount += toDecimal(event.params.art, seriesAsset.decimals)
   vault.collateralAmount += toDecimal(event.params.ink, collateralAsset.decimals)
 
-  seriesAsset.totalDebt += toDecimal(event.params.ink, collateralAsset.decimals)
+  seriesAsset.totalDebt += toDecimal(event.params.art, collateralAsset.decimals)
   collateralAsset.totalCollateral += toDecimal(event.params.ink, collateralAsset.decimals)
 
   vault.save()

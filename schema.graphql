@@ -14,6 +14,7 @@ type Asset @entity {
   symbol: String!
   decimals: Int!
 
+  totalFYTokens: BigDecimal!
   fyTokens: [FYToken!]! @derivedFrom(field: "underlyingAsset")
 
   totalCollateral: BigDecimal!
