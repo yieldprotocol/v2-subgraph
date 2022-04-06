@@ -1,4 +1,4 @@
-import { store, Address, Bytes } from '@graphprotocol/graph-ts'
+import { store, Address, Bytes, ethereum } from '@graphprotocol/graph-ts'
 import {
   Cauldron, AssetAdded, SeriesAdded, IlkAdded, VaultBuilt, VaultTweaked, VaultPoured, VaultStirred, VaultRolled, SeriesMatured
 } from "../generated/Cauldron/Cauldron"
@@ -15,14 +15,21 @@ function collateralId(seriesId: Bytes, ilkId: Bytes): string {
   return seriesId.toHexString() + '-' + ilkId.toHexString()
 }
 
+function tryOr(result: ethereum.CallResult<string>, fallback: string): string {
+  return result.reverted ? fallback : result.value;
+}
+function tryOrInt(result: ethereum.CallResult<i32>, fallback: i32): i32 {
+  return result.reverted ? fallback : result.value;
+}
+
 export function handleAssetAdded(event: AssetAdded): void {
   let tokenContract = IERC20.bind(event.params.asset)
 
   let asset = new Asset(event.params.asset.toHexString())
   asset.assetId = event.params.assetId
-  asset.name = tokenContract.name()
-  asset.symbol = tokenContract.symbol()
-  asset.decimals = tokenContract.decimals()
+  asset.name = tryOr(tokenContract.try_name(), 'Unknown Asset')
+  asset.symbol = tryOr(tokenContract.try_symbol(), 'ASSET')
+  asset.decimals = tryOrInt(tokenContract.try_decimals(), 0)
 
   asset.totalFYTokens = ZERO.toBigDecimal()
   asset.totalCollateral = ZERO.toBigDecimal()
