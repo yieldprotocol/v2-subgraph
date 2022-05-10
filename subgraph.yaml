@@ -43,6 +43,32 @@ dataSources:
           handler: handleSeriesMatured
       file: ./src/cauldron.ts
   - kind: ethereum/contract
+    name: Laddle
+    network: mainnet
+    source:
+      address: "0xA718fF3fA10fA9F797e98E35fd3A0bEc9e0AA67c"
+      abi: Laddle
+      startBlock: 13450000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - FYToken
+      abis:
+        - name: Laddle
+          file: ./abis/Laddle.json
+        - name: Pool
+          file: ./abis/Pool.json
+        - name: IERC20
+          file: ./abis/IERC20.json
+      eventHandlers:
+        - event: PoolAdded(indexed bytes6,indexed address)
+          handler: handlePoolAdded
+        # - event: JoinAdded(indexed bytes6,indexed address)
+        #   handler: handleJoinAdded
+      file: ./src/laddle.ts
+  - kind: ethereum/contract
     name: PoolFactory
     network: mainnet
     source:
@@ -58,6 +84,8 @@ dataSources:
       abis:
         - name: PoolFactory
           file: ./abis/PoolFactory.json
+        - name: Pool
+          file: ./abis/Pool.json
         - name: FYToken
           file: ./abis/FYToken.json
       eventHandlers:
