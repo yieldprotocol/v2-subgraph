@@ -1,0 +1,114 @@
+specVersion: 0.0.2
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Cauldron
+    network: arbitrum-one
+    source:
+      address: "0x23cc87fbebdd67cce167fa9ec6ad3b7fe3892e30"
+      abi: Cauldron
+      startBlock: 5711510
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - Pool
+      abis:
+        - name: Cauldron
+          file: ./abis/Cauldron.json
+        - name: IERC20
+          file: ./abis/IERC20.json
+      eventHandlers:
+        - event: AssetAdded(indexed bytes6,indexed address)
+          handler: handleAssetAdded
+        - event: SeriesAdded(indexed bytes6,indexed bytes6,indexed address)
+          handler: handleSeriesAdded
+        - event: IlkAdded(indexed bytes6,indexed bytes6)
+          handler: handleIlkAdded
+        - event: VaultBuilt(indexed bytes12,indexed address,indexed bytes6,bytes6)
+          handler: handleVaultBuilt
+        - event: VaultTweaked(indexed bytes12,indexed bytes6,indexed bytes6)
+          handler: handleVaultTweaked
+        - event: VaultDestroyed(indexed bytes12)
+          handler: handleVaultDestroyed
+        - event: VaultPoured(indexed bytes12,indexed bytes6,indexed bytes6,int128,int128)
+          handler: handleVaultPoured
+        - event: VaultStirred(indexed bytes12,indexed bytes12,uint128,uint128)
+          handler: handleVaultStirred
+        - event: VaultRolled(indexed bytes12,indexed bytes6,uint128)
+          handler: handleVaultRolled
+        - event: SeriesMatured(indexed bytes6,uint256)
+          handler: handleSeriesMatured
+      file: ./src/cauldron.ts
+  - kind: ethereum/contract
+    name: Laddle
+    network: arbitrum-one
+    source:
+      address: "0x16E25cf364CeCC305590128335B8f327975d0560"
+      abi: Laddle
+      startBlock: 5711553
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - FYToken
+      abis:
+        - name: FYToken
+          file: ./abis/FYToken.json
+        - name: Laddle
+          file: ./abis/Laddle.json
+        - name: Pool
+          file: ./abis/Pool.json
+        - name: IERC20
+          file: ./abis/IERC20.json
+      eventHandlers:
+        - event: PoolAdded(indexed bytes6,indexed address)
+          handler: handlePoolAdded
+        # - event: JoinAdded(indexed bytes6,indexed address)
+        #   handler: handleJoinAdded
+      file: ./src/laddle.ts
+
+templates:
+  - name: Pool
+    kind: ethereum/contract
+    network: arbitrum-one
+    source:
+      abi: Pool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      file: ./src/pool.ts
+      entities:
+        - Pool
+      abis:
+        - name: Pool
+          file: ./abis/Pool.json
+      eventHandlers:
+        - event: Trade(uint32,indexed address,indexed address,int256,int256)
+          handler: handleTrade
+        - event: Liquidity(uint32,indexed address,indexed address,indexed address,int256,int256,int256)
+          handler: handleLiquity
+        - event: Sync(uint112,uint112,uint256)
+          handler: handleSync
+  - name: FYToken
+    kind: ethereum/contract
+    network: arbitrum-one
+    source:
+      abi: FYToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      file: ./src/fytoken.ts
+      entities:
+        - FYToken
+      abis:
+        - name: FYToken
+          file: ./abis/FYToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
