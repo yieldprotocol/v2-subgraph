@@ -39,7 +39,7 @@ dataSources:
           handler: handleVaultStirred
         - event: VaultRolled(indexed bytes12,indexed bytes6,uint128)
           handler: handleVaultRolled
-        - event: VaultGiven(indexed bytes12, indexed address)
+        - event: VaultGiven(indexed bytes12,indexed address)
           handler: handleVaultGiven
         - event: SeriesMatured(indexed bytes6,uint256)
           handler: handleSeriesMatured
