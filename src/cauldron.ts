@@ -16,6 +16,7 @@ import {
   VaultStirred,
   VaultRolled,
   SeriesMatured,
+  VaultGiven,
 } from "../generated/Cauldron/Cauldron";
 import { IERC20 } from "../generated/Cauldron/IERC20";
 import {
@@ -171,6 +172,17 @@ export function handleVaultRolled(event: VaultRolled): void {
   // TODO: we need to update the art, right?
   vault.series = event.params.seriesId.toHexString();
 
+  vault.save();
+}
+
+export function handleVaultGiven(event: VaultGiven): void {
+  let vault = Vault.load(event.params.vaultId.toHexString());
+
+  if (vault.owner === WITCH) {
+    vault.liquidated = true;
+  }
+
+  vault.owner = event.params.receiver;
   vault.save();
 }
 
