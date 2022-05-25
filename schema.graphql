@@ -37,6 +37,8 @@ type Vault @entity {
 
   debtAmount: BigDecimal!
   collateralAmount: BigDecimal!
+
+  liquidated: Boolean
 }
 
 type FYToken @entity {
