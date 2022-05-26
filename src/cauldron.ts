@@ -1,10 +1,4 @@
-import {
-  store,
-  Address,
-  Bytes,
-  ethereum,
-  dataSource,
-} from "@graphprotocol/graph-ts";
+import { store, Address, Bytes, ethereum } from "@graphprotocol/graph-ts";
 import {
   Cauldron,
   AssetAdded,
@@ -26,10 +20,7 @@ import {
   Vault,
   FYToken,
 } from "../generated/schema";
-import yieldEnv from "../yieldEnv";
 import { EIGHTEEN_DECIMALS, ZERO, toDecimal } from "./lib";
-
-const WITCH = yieldEnv[dataSource.network()];
 
 function assetIdToAddress(cauldronAddress: Address, id: Bytes): Address {
   let cauldron = Cauldron.bind(cauldronAddress);
@@ -176,9 +167,15 @@ export function handleVaultRolled(event: VaultRolled): void {
 }
 
 export function handleVaultGiven(event: VaultGiven): void {
+  let witches: string[] = [
+    "0x53C3760670f6091E1eC76B4dd27f73ba4CAd5061",
+    "0x2CEFcB458Ad3da4E880F11611CE7AFA81afe059e",
+    "0xf8eD39321927F5fae30EC33311F1fe596078ccbD",
+  ];
+
   let vault = Vault.load(event.params.vaultId.toHexString());
 
-  if (vault.owner === WITCH) {
+  if (witches.includes(vault.owner.toString())) {
     vault.liquidated = true;
   }
 
