@@ -29,7 +29,7 @@ import {
 import yieldEnv from "../yieldEnv";
 import { EIGHTEEN_DECIMALS, ZERO, toDecimal } from "./lib";
 
-const WITCH = yieldEnv[dataSource.network()];
+const WITCH = yieldEnv[dataSource.network()].witch as string;
 
 function assetIdToAddress(cauldronAddress: Address, id: Bytes): Address {
   let cauldron = Cauldron.bind(cauldronAddress);
