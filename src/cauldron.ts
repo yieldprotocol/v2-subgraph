@@ -186,6 +186,7 @@ export function handleVaultGiven(event: VaultGiven): void {
     vault.liquidated = false;
   }
 
+  vault.owner = event.params.receiver.toHexString();
   vault.save();
 }
 
