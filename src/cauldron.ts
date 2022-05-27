@@ -87,14 +87,14 @@ export function handleIlkAdded(event: IlkAdded): void {
 
 export function handleVaultBuilt(event: VaultBuilt): void {
   let vault = new Vault(event.params.vaultId.toHexString());
+  let vaultOwner = new VaultOwner(event.params.owner.toHexString());
+
   vault.owner = event.params.owner.toHexString();
   vault.series = event.params.seriesId.toHexString();
   vault.collateral = collateralId(event.params.seriesId, event.params.ilkId);
   vault.debtAmount = ZERO.toBigDecimal();
   vault.collateralAmount = ZERO.toBigDecimal();
   vault.liquidated = false;
-
-  let vaultOwner = new VaultOwner(vault.owner);
 
   vault.save();
   vaultOwner.save();
