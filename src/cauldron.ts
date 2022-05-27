@@ -178,8 +178,10 @@ export function handleVaultGiven(event: VaultGiven): void {
 
   // check if new owner is the witch (both mainnet and arbitrum witch addresses)
   if (
-    receiver == "0x53C3760670f6091E1eC76B4dd27f73ba4CAd5061".toLowerCase() ||
-    receiver == "0x08173D0885B00BDD640aaE57D05AbB74cd00d669".toLowerCase()
+    event.params.receiver ==
+      Address.fromString("0x53C3760670f6091E1eC76B4dd27f73ba4CAd5061") ||
+    event.params.receiver ==
+      Address.fromString("0x08173D0885B00BDD640aaE57D05AbB74cd00d669")
   ) {
     vault.liquidated = true;
   } else {
