@@ -87,9 +87,10 @@ export function handleIlkAdded(event: IlkAdded): void {
 
 export function handleVaultBuilt(event: VaultBuilt): void {
   let vault = new Vault(event.params.vaultId.toHexString());
-  let vaultOwner = new VaultOwner(event.params.owner.toHexString());
+  let owner = event.params.owner.toHexString();
+  let vaultOwner = new VaultOwner(owner);
 
-  vault.owner = event.params.owner.toHexString();
+  vault.owner = owner;
   vault.series = event.params.seriesId.toHexString();
   vault.collateral = collateralId(event.params.seriesId, event.params.ilkId);
   vault.debtAmount = ZERO.toBigDecimal();
@@ -172,21 +173,20 @@ export function handleVaultRolled(event: VaultRolled): void {
 }
 
 export function handleVaultGiven(event: VaultGiven): void {
-  let witches: Array<string> = [
-    "0x53C3760670f6091E1eC76B4dd27f73ba4CAd5061",
-    "0x2CEFcB458Ad3da4E880F11611CE7AFA81afe059e",
-    "0x08173D0885B00BDD640aaE57D05AbB74cd00d669",
-  ];
-
   let vault = Vault.load(event.params.vaultId.toHexString());
+  let receiver = event.params.receiver.toHexString();
 
-  if (witches.includes(vault.owner.toString())) {
+  // check if new owner is the witch (both mainnet and arbitrum witch addresses)
+  if (
+    receiver == "0x53C3760670f6091E1eC76B4dd27f73ba4CAd5061".toLowerCase() ||
+    receiver == "0x08173D0885B00BDD640aaE57D05AbB74cd00d669".toLowerCase()
+  ) {
     vault.liquidated = true;
   } else {
     vault.liquidated = false;
   }
 
-  vault.owner = event.params.receiver.toHexString();
+  vault.owner = receiver;
   vault.save();
 }
 
