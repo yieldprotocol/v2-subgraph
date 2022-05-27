@@ -91,6 +91,7 @@ export function handleVaultBuilt(event: VaultBuilt): void {
   vault.collateral = collateralId(event.params.seriesId, event.params.ilkId);
   vault.debtAmount = ZERO.toBigDecimal();
   vault.collateralAmount = ZERO.toBigDecimal();
+  vault.liquidated = false;
 
   vault.save();
 }
@@ -167,16 +168,18 @@ export function handleVaultRolled(event: VaultRolled): void {
 }
 
 export function handleVaultGiven(event: VaultGiven): void {
-  let witches: string[] = [
+  let witches: Array<string> = [
     "0x53C3760670f6091E1eC76B4dd27f73ba4CAd5061",
     "0x2CEFcB458Ad3da4E880F11611CE7AFA81afe059e",
-    "0xf8eD39321927F5fae30EC33311F1fe596078ccbD",
+    "0x08173D0885B00BDD640aaE57D05AbB74cd00d669",
   ];
 
   let vault = Vault.load(event.params.vaultId.toHexString());
 
   if (witches.includes(vault.owner.toString())) {
     vault.liquidated = true;
+  } else {
+    vault.liquidated = false;
   }
 
   vault.owner = event.params.receiver;
