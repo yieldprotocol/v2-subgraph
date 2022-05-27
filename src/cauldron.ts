@@ -171,12 +171,12 @@ export function handleVaultGiven(event: VaultGiven): void {
   let witches: Array<string> = [
     "0x53C3760670f6091E1eC76B4dd27f73ba4CAd5061",
     "0x2CEFcB458Ad3da4E880F11611CE7AFA81afe059e",
-    "0xf8eD39321927F5fae30EC33311F1fe596078ccbD",
+    "0x08173D0885B00BDD640aaE57D05AbB74cd00d669",
   ];
 
   let vault = Vault.load(event.params.vaultId.toHexString());
 
-  if (witches.map((w) => Address.fromString(w)).includes(vault.owner)) {
+  if (witches.includes(vault.owner.toString())) {
     vault.liquidated = true;
   } else {
     vault.liquidated = false;
