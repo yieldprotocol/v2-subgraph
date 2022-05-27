@@ -58,6 +58,8 @@ dataSources:
       entities:
         - FYToken
       abis:
+        - name: FYToken
+          file: ./abis/FYToken.json
         - name: Ladle
           file: ./abis/Ladle.json
         - name: Pool
