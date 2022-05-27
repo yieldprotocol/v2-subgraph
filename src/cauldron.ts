@@ -19,6 +19,7 @@ import {
   SeriesEntity,
   Vault,
   FYToken,
+  VaultOwner,
 } from "../generated/schema";
 import { EIGHTEEN_DECIMALS, ZERO, toDecimal } from "./lib";
 
@@ -86,14 +87,17 @@ export function handleIlkAdded(event: IlkAdded): void {
 
 export function handleVaultBuilt(event: VaultBuilt): void {
   let vault = new Vault(event.params.vaultId.toHexString());
-  vault.owner = event.params.owner;
+  vault.owner = event.params.owner.toHexString();
   vault.series = event.params.seriesId.toHexString();
   vault.collateral = collateralId(event.params.seriesId, event.params.ilkId);
   vault.debtAmount = ZERO.toBigDecimal();
   vault.collateralAmount = ZERO.toBigDecimal();
   vault.liquidated = false;
 
+  let vaultOwner = new VaultOwner(vault.owner);
+
   vault.save();
+  vaultOwner.save();
 }
 
 export function handleVaultTweaked(event: VaultTweaked): void {
@@ -182,7 +186,6 @@ export function handleVaultGiven(event: VaultGiven): void {
     vault.liquidated = false;
   }
 
-  vault.owner = event.params.receiver;
   vault.save();
 }
 
