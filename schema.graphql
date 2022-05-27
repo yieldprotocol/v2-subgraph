@@ -31,7 +31,7 @@ type Collateral @entity {
 
 type Vault @entity {
   id: ID!
-  owner: Bytes!
+  owner: VaultOwner!
   series: SeriesEntity!
   collateral: Collateral!
 
@@ -39,6 +39,11 @@ type Vault @entity {
   collateralAmount: BigDecimal!
 
   liquidated: Boolean
+}
+
+type VaultOwner @entity {
+  id: ID!
+  vaults: [Vault!]! @derivedFrom(field: "owner")
 }
 
 type FYToken @entity {
