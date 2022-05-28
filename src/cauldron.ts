@@ -185,8 +185,6 @@ export function handleVaultGiven(event: VaultGiven): void {
       Address.fromString("0x08173D0885B00BDD640aaE57D05AbB74cd00d669")
   ) {
     vault.liquidated = true;
-  } else {
-    vault.liquidated = false;
   }
 
   vault.owner = receiver;
