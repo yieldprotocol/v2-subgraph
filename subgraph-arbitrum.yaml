@@ -48,7 +48,7 @@ dataSources:
     name: Ladle
     network: arbitrum-one
     source:
-      address: "0xC5A62972418195031F931944f9C156d563De1fb4"
+      address: "0x16E25cf364CeCC305590128335B8f327975d0560"
       abi: Ladle
       startBlock: 5711553
     mapping:
