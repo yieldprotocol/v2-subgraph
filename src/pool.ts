@@ -1,4 +1,4 @@
-import { Address, BigInt, BigDecimal } from '@graphprotocol/graph-ts'
+import { Address, BigInt, BigDecimal, dataSource } from '@graphprotocol/graph-ts'
 import {
   Pool as PoolContract,
   Sync,
@@ -7,6 +7,10 @@ import {
 } from "../generated/templates/Pool/Pool"
 import { Asset, Pool, FYToken, Trade } from "../generated/schema"
 import { EIGHTEEN_DECIMALS, toDecimal, ZERO } from "./lib"
+
+let minimumUpdateTime = new Map<string, i32>()
+// Only update arbitrum once per day, due to slow archive queries
+minimumUpdateTime.set('arbitrum-one', 60 * 60)
 
 let SECONDS_PER_YEAR: f64 = 365 * 24 * 60 * 60
 let k = (1 as f64) / (4 * 365 * 24 * 60 * 60 as f64) // 1 / seconds in four years
@@ -100,6 +104,12 @@ function calculateInvariant(
 function updatePool(fyToken: FYToken, pool: Pool, poolAddress: Address, timestamp: i32): void {
   // Subtract the previous pool TLV. We'll add the updated value back after recalculating it
   // yieldSingleton.poolTLVInDai -= (fyToken.poolDaiReserves + fyToken.poolFYDaiValueInDai)
+  let network = dataSource.network()
+  if (minimumUpdateTime.has(network)) {
+    if ((timestamp - pool.lastUpdated) < minimumUpdateTime.get(network)) {
+      return
+    }
+  }
 
   let poolContract = PoolContract.bind(poolAddress)
 
@@ -126,6 +136,7 @@ function updatePool(fyToken: FYToken, pool: Pool, poolAddress: Address, timestam
     pool.poolTokens,
     timeTillMaturity
   )
+  pool.lastUpdated = timestamp
 }
 
 // Adapted from https://github.com/yieldprotocol/fyDai-frontend/blob/master/src/hooks/mathHooks.ts#L219
