@@ -21,9 +21,9 @@ import {
   FYToken,
   Repay,
   Borrow,
-  VaultOwner,
 } from "../generated/schema";
 import { createFYToken } from "./fytoken-factory";
+import { getOrCreateAccount } from "./accounts";
 import { EIGHTEEN_DECIMALS, ZERO, toDecimal, ONE } from "./lib";
 
 export function assetIdToAddress(cauldronAddress: Address, id: Bytes): Address {
@@ -105,7 +105,7 @@ export function handleIlkAdded(event: IlkAdded): void {
 export function handleVaultBuilt(event: VaultBuilt): void {
   let vault = new Vault(event.params.vaultId.toHexString());
   let owner = event.params.owner.toHexString();
-  let vaultOwner = new VaultOwner(owner);
+  getOrCreateAccount(event.params.owner);
 
   vault.owner = owner;
   vault.series = event.params.seriesId.toHexString();
@@ -115,7 +115,6 @@ export function handleVaultBuilt(event: VaultBuilt): void {
   vault.liquidated = false;
 
   vault.save();
-  vaultOwner.save();
 }
 
 export function handleVaultTweaked(event: VaultTweaked): void {
@@ -228,7 +227,7 @@ export function handleVaultRolled(event: VaultRolled): void {
 export function handleVaultGiven(event: VaultGiven): void {
   let vault = Vault.load(event.params.vaultId.toHexString());
   let receiver = event.params.receiver.toHexString();
-  let vaultOwner = VaultOwner.load(vault.owner);
+  getOrCreateAccount(event.params.receiver);
 
   // check if new owner is the witch (both mainnet and arbitrum witch addresses)
   if (
@@ -241,8 +240,6 @@ export function handleVaultGiven(event: VaultGiven): void {
   }
 
   vault.owner = receiver;
-  vaultOwner.id = receiver;
-  vaultOwner.save();
   vault.save();
 }
 
