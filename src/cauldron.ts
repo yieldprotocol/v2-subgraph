@@ -9,6 +9,7 @@ import {
   VaultPoured,
   VaultStirred,
   VaultRolled,
+  VaultGiven,
   SeriesMatured,
 } from "../generated/Cauldron/Cauldron";
 import { IERC20 } from "../generated/Cauldron/IERC20";
