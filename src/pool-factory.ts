@@ -34,6 +34,7 @@ export function createPool(poolAddress: Address): Pool {
   pool.totalTradingFeesInBase = ZERO.toBigDecimal()
   pool.tvlInBase = ZERO.toBigDecimal()
   pool.invariant = ONE.toBigDecimal()
+  pool.lastUpdated = 0
   pool.save()
 
   PoolTemplate.create(poolAddress)

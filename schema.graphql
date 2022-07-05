@@ -73,6 +73,8 @@ type Pool @entity {
   tvlInBase: BigDecimal!
 
   invariant: BigDecimal!
+
+  lastUpdated: Int!
 }
 
 # Events
