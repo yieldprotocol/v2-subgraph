@@ -7,6 +7,8 @@ import {
 } from "../generated/templates/Pool/Pool"
 import { Asset, Pool, FYToken, Trade } from "../generated/schema"
 import { EIGHTEEN_DECIMALS, toDecimal, ZERO } from "./lib"
+import { getOrCreateAccount } from './accounts'
+import { getGlobalStats } from './global'
 
 let minimumUpdateTime = new Map<string, i32>()
 // Only update arbitrum once per day, due to slow archive queries
@@ -192,6 +194,7 @@ export function handleTrade(event: TradeEvent): void {
   let pool = Pool.load(event.address.toHexString())!
   let fyToken = FYToken.load(pool.fyToken)!
   let baseToken = Asset.load(fyToken.underlyingAsset)
+  let globalStats = getGlobalStats()
 
   let timeTillMaturity = fyToken.maturity - event.block.timestamp.toI32()
   let fee = getFee(
@@ -221,9 +224,20 @@ export function handleTrade(event: TradeEvent): void {
   trade.amountFYToken = toDecimal(event.params.fyTokens, baseToken.decimals)
   trade.feeInBase = fee
 
+  let trader = getOrCreateAccount(event.params.to)
+  trader.numTrades += 1
+
+  globalStats.numTrades += 1
+  if (trader.numTrades == 1) {
+    globalStats.numTraders += 1
+  }
+
+
   pool.save()
   baseToken.save()
   trade.save()
+  trader.save()
+  globalStats.save()
 }
 
 export function handleLiquity(event: LiquidityEvent): void {
