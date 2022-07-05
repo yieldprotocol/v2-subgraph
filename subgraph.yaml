@@ -20,6 +20,8 @@ dataSources:
           file: ./abis/Cauldron.json
         - name: IERC20
           file: ./abis/IERC20.json
+        - name: FYToken
+          file: ./abis/FYToken.json
       eventHandlers:
         - event: AssetAdded(indexed bytes6,indexed address)
           handler: handleAssetAdded

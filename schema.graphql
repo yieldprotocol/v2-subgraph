@@ -98,3 +98,25 @@ type Trade @entity {
 
   feeInBase: BigDecimal!
 }
+
+type Borrow @entity {
+  id: ID!
+  vault: Vault!
+  tx: Bytes
+
+  debtAsset: Asset!
+  collateralAsset: Asset!
+  debtAmount: BigDecimal!
+  collateralAmount: BigDecimal!
+}
+
+type Repay @entity {
+  id: ID!
+  vault: Vault!
+  tx: Bytes
+
+  debtAsset: Asset!
+  collateralAsset: Asset!
+  debtAmount: BigDecimal!
+  collateralAmount: BigDecimal!
+}
