@@ -5,6 +5,7 @@ export function getGlobalStats(): YieldGlobalStats {
   if (!global) {
     global = new YieldGlobalStats('Yield')
     global.numTrades = 0
+    global.numTradesOverThreshold = 0
     global.numTraders = 0
   }
   return global!

@@ -231,7 +231,9 @@ export function handleTrade(event: TradeEvent): void {
   if (trader.numTrades == 1) {
     globalStats.numTraders += 1
   }
-
+  if (trade.amountBaseToken.gt(BigInt.fromI32(40).toBigDecimal())) {
+    globalStats.numTradesOverThreshold += 1
+  }
 
   pool.save()
   baseToken.save()
