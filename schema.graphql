@@ -1,6 +1,7 @@
 type YieldGlobalStats @entity {
   id: ID!
   numTrades: Int!
+  numTradesOverThreshold: Int!
   numTraders: Int!
 }
 
