@@ -147,7 +147,7 @@ function updatePool(
   // yieldSingleton.poolTLVInDai -= (fyToken.poolDaiReserves + fyToken.poolFYDaiValueInDai)
   let network = dataSource.network();
   if (minimumUpdateTime.has(network)) {
-    if (timestamp - pool.lastUpdated < minimumUpdateTime.get(network)) {
+    if ((timestamp - pool.lastUpdated) < minimumUpdateTime.get(network)) {
       return;
     }
   }

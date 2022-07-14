@@ -25,7 +25,6 @@ import {
 import { createFYToken } from "./fytoken-factory";
 import { getOrCreateAccount } from "./accounts";
 import { EIGHTEEN_DECIMALS, ZERO, toDecimal, ONE } from "./lib";
-import { createStrategies } from "./strategy";
 
 export function assetIdToAddress(cauldronAddress: Address, id: Bytes): Address {
   let cauldron = Cauldron.bind(cauldronAddress);
@@ -88,8 +87,6 @@ export function handleSeriesAdded(event: SeriesAdded): void {
   series.maturity = fyToken.maturity;
 
   series.save();
-
-  createStrategies();
 }
 
 export function handleIlkAdded(event: IlkAdded): void {
