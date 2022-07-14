@@ -145,7 +145,5 @@ type Liquidity @entity {
   from: Bytes!
   to: Bytes!
   timestamp: BigInt!
-
-  amountBaseToken: BigDecimal!
   amountStrategyTokens: BigDecimal!
 }
