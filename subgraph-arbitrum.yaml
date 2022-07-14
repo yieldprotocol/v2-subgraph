@@ -68,11 +68,13 @@ dataSources:
           file: ./abis/Pool.json
         - name: IERC20
           file: ./abis/IERC20.json
+        - name: Strategy
+          file: ./abis/Strategy.json
       eventHandlers:
         - event: PoolAdded(indexed bytes6,indexed address)
           handler: handlePoolAdded
-        # - event: JoinAdded(indexed bytes6,indexed address)
-        #   handler: handleJoinAdded
+        - event: TokenAdded(indexed address,indexed bool)
+          handler: handleTokenAdded
       file: ./src/ladle.ts
 
 templates:
