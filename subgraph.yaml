@@ -68,11 +68,13 @@ dataSources:
           file: ./abis/Pool.json
         - name: IERC20
           file: ./abis/IERC20.json
+        - name: Strategy
+          file: ./abis/Strategy.json
       eventHandlers:
         - event: PoolAdded(indexed bytes6,indexed address)
           handler: handlePoolAdded
-        # - event: JoinAdded(indexed bytes6,indexed address)
-        #   handler: handleJoinAdded
+        - event: TokenAdded(indexed address,indexed bool)
+          handler: handleTokenAdded
       file: ./src/ladle.ts
   - kind: ethereum/contract
     name: PoolFactory
@@ -159,6 +161,24 @@ templates:
       abis:
         - name: FYToken
           file: ./abis/FYToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+  - name: Strategy
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: Strategy
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      file: ./src/strategy.ts
+      entities:
+        - Strategy
+      abis:
+        - name: Strategy
+          file: ./abis/Strategy.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer

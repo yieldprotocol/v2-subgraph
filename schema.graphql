@@ -92,6 +92,15 @@ type Pool @entity {
   lastUpdated: Int!
 }
 
+type Strategy @entity {
+  id: ID!
+  name: String!
+  symbol: String!
+  decimals: Int!
+  currentPool: Pool
+  totalSupply: BigDecimal!
+}
+
 # Events
 
 type Trade @entity {
@@ -127,4 +136,14 @@ type Repay @entity {
   collateralAsset: Asset!
   debtAmount: BigDecimal!
   collateralAmount: BigDecimal!
+}
+
+# Adding liquidity via strategy
+type Liquidity @entity {
+  id: ID!
+  strategy: Strategy!
+  from: Bytes!
+  to: Bytes!
+  timestamp: BigInt!
+  amountStrategyTokens: BigDecimal!
 }
