@@ -1,3 +1,10 @@
+type YieldGlobalStats @entity {
+  id: ID!
+  numTrades: Int!
+  numTradesOverThreshold: Int!
+  numTraders: Int!
+}
+
 # we have to add "Entity" since Series can't be pluralized
 type SeriesEntity @entity {
   id: ID!
@@ -31,7 +38,7 @@ type Collateral @entity {
 
 type Vault @entity {
   id: ID!
-  owner: VaultOwner!
+  owner: Account!
   series: SeriesEntity!
   collateral: Collateral!
 
@@ -41,9 +48,10 @@ type Vault @entity {
   liquidated: Boolean
 }
 
-type VaultOwner @entity {
+type Account @entity {
   id: ID!
   vaults: [Vault!]! @derivedFrom(field: "owner")
+  numTrades: Int!
 }
 
 type FYToken @entity {
@@ -84,6 +92,15 @@ type Pool @entity {
   lastUpdated: Int!
 }
 
+type Strategy @entity {
+  id: ID!
+  name: String!
+  symbol: String!
+  decimals: Int!
+  currentPool: Pool
+  totalSupply: BigDecimal!
+}
+
 # Events
 
 type Trade @entity {
@@ -97,4 +114,36 @@ type Trade @entity {
   amountFYToken: BigDecimal!
 
   feeInBase: BigDecimal!
+}
+
+type Borrow @entity {
+  id: ID!
+  vault: Vault!
+  tx: Bytes
+
+  debtAsset: Asset!
+  collateralAsset: Asset!
+  debtAmount: BigDecimal!
+  collateralAmount: BigDecimal!
+}
+
+type Repay @entity {
+  id: ID!
+  vault: Vault!
+  tx: Bytes
+
+  debtAsset: Asset!
+  collateralAsset: Asset!
+  debtAmount: BigDecimal!
+  collateralAmount: BigDecimal!
+}
+
+# Adding liquidity via strategy
+type Liquidity @entity {
+  id: ID!
+  strategy: Strategy!
+  from: Bytes!
+  to: Bytes!
+  timestamp: BigInt!
+  amountStrategyTokens: BigDecimal!
 }

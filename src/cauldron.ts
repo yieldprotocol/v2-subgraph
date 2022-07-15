@@ -9,8 +9,8 @@ import {
   VaultPoured,
   VaultStirred,
   VaultRolled,
-  SeriesMatured,
   VaultGiven,
+  SeriesMatured,
 } from "../generated/Cauldron/Cauldron";
 import { IERC20 } from "../generated/Cauldron/IERC20";
 import {
@@ -19,11 +19,14 @@ import {
   SeriesEntity,
   Vault,
   FYToken,
-  VaultOwner,
+  Repay,
+  Borrow,
 } from "../generated/schema";
-import { EIGHTEEN_DECIMALS, ZERO, toDecimal } from "./lib";
+import { createFYToken } from "./fytoken-factory";
+import { getOrCreateAccount } from "./accounts";
+import { EIGHTEEN_DECIMALS, ZERO, toDecimal, ONE } from "./lib";
 
-function assetIdToAddress(cauldronAddress: Address, id: Bytes): Address {
+export function assetIdToAddress(cauldronAddress: Address, id: Bytes): Address {
   let cauldron = Cauldron.bind(cauldronAddress);
   return cauldron.assets(id);
 }
@@ -40,21 +43,31 @@ function tryOrInt(result: ethereum.CallResult<i32>, fallback: i32): i32 {
 }
 
 export function handleAssetAdded(event: AssetAdded): void {
-  let tokenContract = IERC20.bind(event.params.asset);
+  getOrCreateAsset(event.params.asset, event.params.assetId);
+}
 
-  let asset = new Asset(event.params.asset.toHexString());
-  asset.assetId = event.params.assetId;
-  asset.name = tryOr(tokenContract.try_name(), "Unknown Asset");
-  asset.symbol = tryOr(tokenContract.try_symbol(), "ASSET");
-  asset.decimals = tryOrInt(tokenContract.try_decimals(), 0);
+export function getOrCreateAsset(assetAddress: Address, assetId: Bytes): Asset {
+  let asset = Asset.load(assetAddress.toHexString());
 
-  asset.totalFYTokens = ZERO.toBigDecimal();
-  asset.totalCollateral = ZERO.toBigDecimal();
-  asset.totalDebt = ZERO.toBigDecimal();
-  asset.totalTradingVolume = ZERO.toBigDecimal();
-  asset.totalInPools = ZERO.toBigDecimal();
+  if (!asset) {
+    let tokenContract = IERC20.bind(assetAddress);
 
-  asset.save();
+    asset = new Asset(assetAddress.toHexString());
+    asset.assetId = assetId;
+    asset.name = tryOr(tokenContract.try_name(), "Unknown Asset");
+    asset.symbol = tryOr(tokenContract.try_symbol(), "ASSET");
+    asset.decimals = tryOrInt(tokenContract.try_decimals(), 0);
+
+    asset.totalFYTokens = ZERO.toBigDecimal();
+    asset.totalCollateral = ZERO.toBigDecimal();
+    asset.totalDebt = ZERO.toBigDecimal();
+    asset.totalTradingVolume = ZERO.toBigDecimal();
+    asset.totalInPools = ZERO.toBigDecimal();
+
+    asset.save();
+  }
+
+  return asset!;
 }
 
 export function handleSeriesAdded(event: SeriesAdded): void {
@@ -67,7 +80,11 @@ export function handleSeriesAdded(event: SeriesAdded): void {
   series.matured = false;
 
   let fyToken = FYToken.load(event.params.fyToken.toHexString());
-  series.maturity = fyToken ? fyToken.maturity : 0;
+  if (!fyToken) {
+    fyToken = createFYToken(event.params.fyToken);
+  }
+
+  series.maturity = fyToken.maturity;
 
   series.save();
 }
@@ -88,7 +105,7 @@ export function handleIlkAdded(event: IlkAdded): void {
 export function handleVaultBuilt(event: VaultBuilt): void {
   let vault = new Vault(event.params.vaultId.toHexString());
   let owner = event.params.owner.toHexString();
-  let vaultOwner = new VaultOwner(owner);
+  getOrCreateAccount(event.params.owner);
 
   vault.owner = owner;
   vault.series = event.params.seriesId.toHexString();
@@ -98,7 +115,6 @@ export function handleVaultBuilt(event: VaultBuilt): void {
   vault.liquidated = false;
 
   vault.save();
-  vaultOwner.save();
 }
 
 export function handleVaultTweaked(event: VaultTweaked): void {
@@ -119,20 +135,39 @@ export function handleVaultPoured(event: VaultPoured): void {
   let seriesAsset = Asset.load(series.baseAsset);
   let collateralAsset = Asset.load(collateral.asset);
 
-  vault.debtAmount += toDecimal(event.params.art, seriesAsset.decimals);
-  vault.collateralAmount += toDecimal(
-    event.params.ink,
-    collateralAsset.decimals
-  );
+  let debtDelta = toDecimal(event.params.art, seriesAsset.decimals);
+  let collateralDelta = toDecimal(event.params.ink, collateralAsset.decimals);
 
-  seriesAsset.totalDebt += toDecimal(
-    event.params.art,
-    collateralAsset.decimals
-  );
-  collateralAsset.totalCollateral += toDecimal(
-    event.params.ink,
-    collateralAsset.decimals
-  );
+  vault.debtAmount += debtDelta;
+  vault.collateralAmount += collateralDelta;
+
+  seriesAsset.totalDebt += debtDelta;
+  collateralAsset.totalCollateral += collateralDelta;
+
+  let isBorrow = debtDelta.gt(ZERO.toBigDecimal());
+  let eventId =
+    event.transaction.hash.toHex() + "-" + event.transactionLogIndex.toString();
+  if (isBorrow) {
+    let borrow = new Borrow(eventId);
+    borrow.tx = event.transaction.hash;
+    borrow.debtAsset = series.baseAsset;
+    borrow.collateralAsset = collateral.asset;
+    borrow.vault = vault.id;
+    borrow.debtAmount = debtDelta;
+    borrow.collateralAmount = collateralDelta;
+
+    borrow.save();
+  } else {
+    let repay = new Repay(eventId);
+    repay.tx = event.transaction.hash;
+    repay.debtAsset = series.baseAsset;
+    repay.collateralAsset = collateral.asset;
+    repay.vault = vault.id;
+    repay.debtAmount = debtDelta.times(ONE.neg().toBigDecimal());
+    repay.collateralAmount = collateralDelta.times(ONE.neg().toBigDecimal());
+
+    repay.save();
+  }
 
   vault.save();
   seriesAsset.save();
@@ -148,19 +183,36 @@ export function handleVaultStirred(event: VaultStirred): void {
   let seriesAsset = Asset.load(series.baseAsset);
   let collateralAsset = Asset.load(collateral.asset);
 
-  fromVault.debtAmount -= toDecimal(event.params.art, seriesAsset.decimals);
-  fromVault.collateralAmount -= toDecimal(
-    event.params.ink,
-    collateralAsset.decimals
-  );
-  toVault.debtAmount += toDecimal(event.params.art, seriesAsset.decimals);
-  toVault.collateralAmount += toDecimal(
-    event.params.ink,
-    collateralAsset.decimals
-  );
+  let debtDelta = toDecimal(event.params.art, seriesAsset.decimals);
+  let collateralDelta = toDecimal(event.params.ink, collateralAsset.decimals);
+
+  fromVault.debtAmount -= debtDelta;
+  fromVault.collateralAmount -= collateralDelta;
+  toVault.debtAmount += debtDelta;
+  toVault.collateralAmount += collateralDelta;
+
+  let eventId =
+    event.transaction.hash.toHex() + "-" + event.transactionLogIndex.toString();
+  let repay = new Repay(eventId + "-repay");
+  repay.tx = event.transaction.hash;
+  repay.debtAsset = series.baseAsset;
+  repay.collateralAsset = collateral.asset;
+  repay.vault = fromVault.id;
+  repay.debtAmount = debtDelta;
+  repay.collateralAmount = collateralDelta;
+
+  let borrow = new Borrow(eventId + "-borrow");
+  borrow.tx = event.transaction.hash;
+  borrow.debtAsset = series.baseAsset;
+  borrow.collateralAsset = collateral.asset;
+  borrow.vault = toVault.id;
+  borrow.debtAmount = debtDelta;
+  borrow.collateralAmount = collateralDelta;
 
   fromVault.save();
   toVault.save();
+  borrow.save();
+  repay.save();
 }
 
 export function handleVaultRolled(event: VaultRolled): void {
@@ -175,7 +227,7 @@ export function handleVaultRolled(event: VaultRolled): void {
 export function handleVaultGiven(event: VaultGiven): void {
   let vault = Vault.load(event.params.vaultId.toHexString());
   let receiver = event.params.receiver.toHexString();
-  let vaultOwner = VaultOwner.load(vault.owner);
+  getOrCreateAccount(event.params.receiver);
 
   // check if new owner is the witch (both mainnet and arbitrum witch addresses)
   if (
@@ -188,8 +240,6 @@ export function handleVaultGiven(event: VaultGiven): void {
   }
 
   vault.owner = receiver;
-  vaultOwner.id = receiver;
-  vaultOwner.save();
   vault.save();
 }
 

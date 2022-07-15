@@ -1,22 +1,29 @@
-import { Address, BigInt, BigDecimal, dataSource } from '@graphprotocol/graph-ts'
+import {
+  Address,
+  BigInt,
+  BigDecimal,
+  dataSource,
+} from "@graphprotocol/graph-ts";
 import {
   Pool as PoolContract,
   Sync,
   Trade as TradeEvent,
-  Liquidity as LiquidityEvent
-} from "../generated/templates/Pool/Pool"
-import { Asset, Pool, FYToken, Trade } from "../generated/schema"
-import { EIGHTEEN_DECIMALS, toDecimal, ZERO } from "./lib"
+  Liquidity as LiquidityEvent,
+} from "../generated/templates/Pool/Pool";
+import { Asset, Pool, FYToken, Trade } from "../generated/schema";
+import { EIGHTEEN_DECIMALS, toDecimal, ZERO } from "./lib";
+import { getOrCreateAccount } from "./accounts";
+import { getGlobalStats } from "./global";
 
-let minimumUpdateTime = new Map<string, i32>()
+let minimumUpdateTime = new Map<string, i32>();
 // Only update arbitrum once per day, due to slow archive queries
-minimumUpdateTime.set('arbitrum-one', 60 * 60)
+minimumUpdateTime.set("arbitrum-one", 60 * 60);
 
-let SECONDS_PER_YEAR: f64 = 365 * 24 * 60 * 60
-let k = (1 as f64) / (4 * 365 * 24 * 60 * 60 as f64) // 1 / seconds in four years
-let g1 = 950 as f64 / 1000 as f64
-let g2 = 1000 as f64 / 950 as f64
-let gNoFee: f64 = 1
+let SECONDS_PER_YEAR: f64 = 365 * 24 * 60 * 60;
+let k = (1 as f64) / ((4 * 365 * 24 * 60 * 60) as f64); // 1 / seconds in four years
+let g1 = ((950 as f64) / 1000) as f64;
+let g2 = ((1000 as f64) / 950) as f64;
+let gNoFee: f64 = 1;
 
 function buyFYDai(
   fyTokenReserves: f64,
@@ -25,14 +32,14 @@ function buyFYDai(
   fyDai: f64,
   g: f64
 ): f64 {
-  let t = k * timeTillMaturity
-  let a = 1 as f64 - (g * t)
-  let Za = Math.pow(baseReserves, a)
-  let Ya = Math.pow(fyTokenReserves, a)
-  let Yxa = Math.pow(fyTokenReserves - fyDai, a)
-  let y = Math.pow((Za + Ya) - Yxa, (1 as f64 / a)) - baseReserves
+  let t = k * timeTillMaturity;
+  let a = (1 as f64) - g * t;
+  let Za = Math.pow(baseReserves, a);
+  let Ya = Math.pow(fyTokenReserves, a);
+  let Yxa = Math.pow(fyTokenReserves - fyDai, a);
+  let y = Math.pow(Za + Ya - Yxa, (1 as f64) / a) - baseReserves;
 
-  return y
+  return y;
 }
 
 function sellFYDai(
@@ -42,14 +49,14 @@ function sellFYDai(
   fyDai: f64,
   g: f64
 ): f64 {
-  let t = k * timeTillMaturity
-  let a = 1 as f64 - (g * t)
-  let Za = Math.pow(baseReserves, a)
-  let Ya = Math.pow(fyTokenReserves, a)
-  let Yxa = Math.pow(fyTokenReserves + fyDai, a)
-  let y = baseReserves - Math.pow(Za + (Ya - Yxa), (1 as f64 / a))
+  let t = k * timeTillMaturity;
+  let a = (1 as f64) - g * t;
+  let Za = Math.pow(baseReserves, a);
+  let Ya = Math.pow(fyTokenReserves, a);
+  let Yxa = Math.pow(fyTokenReserves + fyDai, a);
+  let y = baseReserves - Math.pow(Za + (Ya - Yxa), (1 as f64) / a);
 
-  return y
+  return y;
 }
 
 function getFee(
@@ -58,27 +65,51 @@ function getFee(
   timeTillMaturity: i32,
   fyTokensTraded: BigDecimal
 ): BigDecimal {
-  let fyDaiReservesDecimal = parseFloat(fyTokenVirtualReserves.toString())
-  let daiReservesDecimal = parseFloat(baseReserves.toString())
-  let fyDaiDecimal = parseFloat(fyTokensTraded.toString())
+  let fyDaiReservesDecimal = parseFloat(fyTokenVirtualReserves.toString());
+  let daiReservesDecimal = parseFloat(baseReserves.toString());
+  let fyDaiDecimal = parseFloat(fyTokensTraded.toString());
 
-  let fee: f64 = 0
+  let fee: f64 = 0;
   if (fyTokensTraded >= ZERO.toBigDecimal()) {
-    let daiWithFee = buyFYDai(fyDaiReservesDecimal, daiReservesDecimal, timeTillMaturity, fyDaiDecimal, g1)
-    let daiWithoutFee = buyFYDai(fyDaiReservesDecimal, daiReservesDecimal, timeTillMaturity, fyDaiDecimal, gNoFee)
-    fee = daiWithFee - daiWithoutFee
+    let daiWithFee = buyFYDai(
+      fyDaiReservesDecimal,
+      daiReservesDecimal,
+      timeTillMaturity,
+      fyDaiDecimal,
+      g1
+    );
+    let daiWithoutFee = buyFYDai(
+      fyDaiReservesDecimal,
+      daiReservesDecimal,
+      timeTillMaturity,
+      fyDaiDecimal,
+      gNoFee
+    );
+    fee = daiWithFee - daiWithoutFee;
   } else {
-    let daiWithFee = sellFYDai(fyDaiReservesDecimal, daiReservesDecimal, timeTillMaturity, -fyDaiDecimal, g2)
-    let daiWithoutFee = sellFYDai(fyDaiReservesDecimal, daiReservesDecimal, timeTillMaturity, -fyDaiDecimal, gNoFee)
-    fee = daiWithoutFee - daiWithFee
+    let daiWithFee = sellFYDai(
+      fyDaiReservesDecimal,
+      daiReservesDecimal,
+      timeTillMaturity,
+      -fyDaiDecimal,
+      g2
+    );
+    let daiWithoutFee = sellFYDai(
+      fyDaiReservesDecimal,
+      daiReservesDecimal,
+      timeTillMaturity,
+      -fyDaiDecimal,
+      gNoFee
+    );
+    fee = daiWithoutFee - daiWithFee;
   }
-  if (fee.toString() == 'NaN') {
-    return ZERO.toBigDecimal()
+  if (fee.toString() == "NaN") {
+    return ZERO.toBigDecimal();
   }
-  return BigDecimal.fromString(fee.toString())
+  return BigDecimal.fromString(fee.toString());
 }
 
-let ts = 10 * 365 * 24 * 60 * 60 // Seconds in 10 years
+let ts = 10 * 365 * 24 * 60 * 60; // Seconds in 10 years
 
 function calculateInvariant(
   baseReserves: BigDecimal,
@@ -87,153 +118,194 @@ function calculateInvariant(
   timeTillMaturity: i32
 ): BigDecimal {
   if (totalSupply == ZERO.toBigDecimal()) {
-    return ZERO.toBigDecimal()
+    return ZERO.toBigDecimal();
   }
 
-  let fyTokenVirtualReservesDecimal = parseFloat(fyTokenVirtualReserves.toString())
-  let baseReservesDecimal = parseFloat(baseReserves.toString())
-  let totalSupplyDecimal = parseFloat(totalSupply.toString())
+  let fyTokenVirtualReservesDecimal = parseFloat(
+    fyTokenVirtualReserves.toString()
+  );
+  let baseReservesDecimal = parseFloat(baseReserves.toString());
+  let totalSupplyDecimal = parseFloat(totalSupply.toString());
 
-  let a = 1 - (timeTillMaturity / ts)
-  let sum = (Math.pow(baseReservesDecimal, a) + Math.pow(fyTokenVirtualReservesDecimal, a)) / 2
-  let result = Math.pow(sum, (1 / a)) / totalSupplyDecimal
+  let a = 1 - timeTillMaturity / ts;
+  let sum =
+    (Math.pow(baseReservesDecimal, a) +
+      Math.pow(fyTokenVirtualReservesDecimal, a)) /
+    2;
+  let result = Math.pow(sum, 1 / a) / totalSupplyDecimal;
 
-  return BigDecimal.fromString(result.toString())
+  return BigDecimal.fromString(result.toString());
 }
 
-function updatePool(fyToken: FYToken, pool: Pool, poolAddress: Address, timestamp: i32): void {
+function updatePool(
+  fyToken: FYToken,
+  pool: Pool,
+  poolAddress: Address,
+  timestamp: i32
+): void {
   // Subtract the previous pool TLV. We'll add the updated value back after recalculating it
   // yieldSingleton.poolTLVInDai -= (fyToken.poolDaiReserves + fyToken.poolFYDaiValueInDai)
-  let network = dataSource.network()
+  let network = dataSource.network();
   if (minimumUpdateTime.has(network)) {
     if ((timestamp - pool.lastUpdated) < minimumUpdateTime.get(network)) {
-      return
+      return;
     }
   }
 
-  let poolContract = PoolContract.bind(poolAddress)
+  let poolContract = PoolContract.bind(poolAddress);
 
-  let fyDaiPriceInBase: BigDecimal
+  let fyDaiPriceInBase: BigDecimal;
   if (fyToken.maturity < timestamp) {
-    fyDaiPriceInBase = BigInt.fromI32(1).toBigDecimal()
+    fyDaiPriceInBase = BigInt.fromI32(1).toBigDecimal();
   } else {
-    let buyPriceResult = poolContract.try_sellFYTokenPreview(BigInt.fromI32(10).pow((fyToken.decimals as u8) - 2))
+    let buyPriceResult = poolContract.try_sellFYTokenPreview(
+      BigInt.fromI32(10).pow((fyToken.decimals as u8) - 2)
+    );
 
     if (buyPriceResult.reverted) {
-      fyDaiPriceInBase = BigInt.fromI32(0).toBigDecimal()
+      fyDaiPriceInBase = BigInt.fromI32(0).toBigDecimal();
     } else {
-      fyDaiPriceInBase = toDecimal(buyPriceResult.value * BigInt.fromI32(100), fyToken.decimals)
+      fyDaiPriceInBase = toDecimal(
+        buyPriceResult.value * BigInt.fromI32(100),
+        fyToken.decimals
+      );
     }
   }
-  pool.currentFYTokenPriceInBase = fyDaiPriceInBase
-  pool.tvlInBase = pool.baseReserves + (pool.fyTokenReserves * pool.currentFYTokenPriceInBase)
+  pool.currentFYTokenPriceInBase = fyDaiPriceInBase;
+  pool.tvlInBase =
+    pool.baseReserves + pool.fyTokenReserves * pool.currentFYTokenPriceInBase;
 
-  let timeTillMaturity = fyToken.maturity < timestamp ? 0 : fyToken.maturity - timestamp
-  pool.apr = yieldAPR(parseFloat(fyDaiPriceInBase.toString()), timeTillMaturity)
+  let timeTillMaturity =
+    fyToken.maturity < timestamp ? 0 : fyToken.maturity - timestamp;
+  pool.apr = yieldAPR(
+    parseFloat(fyDaiPriceInBase.toString()),
+    timeTillMaturity
+  );
   pool.invariant = calculateInvariant(
     pool.baseReserves,
     pool.fyTokenVirtualReserves,
     pool.poolTokens,
     timeTillMaturity
-  )
-  pool.lastUpdated = timestamp
+  );
+  pool.lastUpdated = timestamp;
 }
 
 // Adapted from https://github.com/yieldprotocol/fyDai-frontend/blob/master/src/hooks/mathHooks.ts#L219
 function yieldAPR(fyDaiPriceInBase: f64, timeTillMaturity: i32): BigDecimal {
   if (timeTillMaturity < 0) {
-    return ZERO.toBigDecimal()
+    return ZERO.toBigDecimal();
   }
 
-  let propOfYear = (timeTillMaturity as f64) / SECONDS_PER_YEAR
-  let priceRatio = 1 / fyDaiPriceInBase
-  let powRatio = 1 / propOfYear
-  let apr = Math.pow(priceRatio, powRatio) - 1
+  let propOfYear = (timeTillMaturity as f64) / SECONDS_PER_YEAR;
+  let priceRatio = 1 / fyDaiPriceInBase;
+  let powRatio = 1 / propOfYear;
+  let apr = Math.pow(priceRatio, powRatio) - 1;
 
   if (apr > 0 && apr < 100) {
-    let aprPercent = apr * 100
-    return BigDecimal.fromString(aprPercent.toString())
+    let aprPercent = apr * 100;
+    return BigDecimal.fromString(aprPercent.toString());
   }
-  return ZERO.toBigDecimal()
+  return ZERO.toBigDecimal();
 }
 
 export function handleSync(event: Sync): void {
-  let pool = Pool.load(event.address.toHexString())!
-  let fyToken = FYToken.load(pool.fyToken)!
-  let baseToken: Asset
+  let pool = Pool.load(event.address.toHexString())!;
+  let fyToken = FYToken.load(pool.fyToken)!;
+  let baseToken: Asset;
 
   // It's possible to create a pool with an asset other than the fyToken's underlying
   // In that case, we skip tracking the base TVL
   if (fyToken.underlyingAddress == pool.base) {
-    baseToken = Asset.load(fyToken.underlyingAsset)!
-    baseToken.totalInPools -= pool.baseReserves
+    baseToken = Asset.load(fyToken.underlyingAsset)!;
+    baseToken.totalInPools -= pool.baseReserves;
   }
 
-  fyToken.totalInPools -= pool.fyTokenReserves
+  fyToken.totalInPools -= pool.fyTokenReserves;
 
-  pool.fyTokenReserves = toDecimal(event.params.fyTokenCached, fyToken.decimals) - pool.poolTokens
-  pool.fyTokenVirtualReserves = toDecimal(event.params.fyTokenCached, fyToken.decimals)
-  pool.baseReserves = toDecimal(event.params.baseCached, fyToken.decimals)
+  pool.fyTokenReserves =
+    toDecimal(event.params.fyTokenCached, fyToken.decimals) - pool.poolTokens;
+  pool.fyTokenVirtualReserves = toDecimal(
+    event.params.fyTokenCached,
+    fyToken.decimals
+  );
+  pool.baseReserves = toDecimal(event.params.baseCached, fyToken.decimals);
 
-  fyToken.totalInPools += pool.fyTokenReserves
-  fyToken.save()
+  fyToken.totalInPools += pool.fyTokenReserves;
+  fyToken.save();
 
   if (baseToken) {
-    baseToken.totalInPools += pool.baseReserves
-    baseToken.save()
+    baseToken.totalInPools += pool.baseReserves;
+    baseToken.save();
   }
 
-  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32())
+  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32());
 
-  pool.save()
+  pool.save();
 }
 
 export function handleTrade(event: TradeEvent): void {
-  let pool = Pool.load(event.address.toHexString())!
-  let fyToken = FYToken.load(pool.fyToken)!
-  let baseToken = Asset.load(fyToken.underlyingAsset)
+  let pool = Pool.load(event.address.toHexString())!;
+  let fyToken = FYToken.load(pool.fyToken)!;
+  let baseToken = Asset.load(fyToken.underlyingAsset);
+  let globalStats = getGlobalStats();
 
-  let timeTillMaturity = fyToken.maturity - event.block.timestamp.toI32()
+  let timeTillMaturity = fyToken.maturity - event.block.timestamp.toI32();
   let fee = getFee(
     pool.fyTokenVirtualReserves,
     pool.baseReserves,
     timeTillMaturity,
     toDecimal(event.params.fyTokens, fyToken.decimals)
-  )
-  pool.totalTradingFeesInBase += fee
+  );
+  pool.totalTradingFeesInBase += fee;
 
-  let baseVolume = toDecimal(event.params.bases, fyToken.decimals)
+  let baseVolume = toDecimal(event.params.bases, fyToken.decimals);
   if (baseVolume.lt(ZERO.toBigDecimal())) {
-    baseVolume = baseVolume.neg()
+    baseVolume = baseVolume.neg();
   }
-  pool.totalVolumeInBase += baseVolume
+  pool.totalVolumeInBase += baseVolume;
 
-  baseToken.totalTradingVolume += baseVolume
+  baseToken.totalTradingVolume += baseVolume;
 
-  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32())
+  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32());
 
-  let trade = new Trade(event.transaction.hash.toHex() + "-" + event.logIndex.toString())
-  trade.timestamp = event.block.timestamp
-  trade.pool = event.address.toHexString()
-  trade.from = event.params.from
-  trade.to = event.params.to
-  trade.amountBaseToken = toDecimal(event.params.bases, baseToken.decimals)
-  trade.amountFYToken = toDecimal(event.params.fyTokens, baseToken.decimals)
-  trade.feeInBase = fee
+  let trade = new Trade(
+    event.transaction.hash.toHex() + "-" + event.logIndex.toString()
+  );
+  trade.timestamp = event.block.timestamp;
+  trade.pool = event.address.toHexString();
+  trade.from = event.params.from;
+  trade.to = event.params.to;
+  trade.amountBaseToken = toDecimal(event.params.bases, baseToken.decimals);
+  trade.amountFYToken = toDecimal(event.params.fyTokens, baseToken.decimals);
+  trade.feeInBase = fee;
 
-  pool.save()
-  baseToken.save()
-  trade.save()
+  let trader = getOrCreateAccount(event.params.to);
+  trader.numTrades += 1;
+
+  globalStats.numTrades += 1;
+  if (trader.numTrades == 1) {
+    globalStats.numTraders += 1;
+  }
+
+  if (trade.amountBaseToken.gt(BigInt.fromI32(40).toBigDecimal())) {
+    globalStats.numTradesOverThreshold += 1;
+  }
+
+  pool.save();
+  baseToken.save();
+  trade.save();
+  trader.save();
+  globalStats.save();
 }
 
 export function handleLiquity(event: LiquidityEvent): void {
-  let pool = Pool.load(event.address.toHexString())!
-  let fyToken = FYToken.load(pool.fyToken)!
+  let pool = Pool.load(event.address.toHexString())!;
+  let fyToken = FYToken.load(pool.fyToken)!;
 
-  pool.fyTokenReserves -= toDecimal(event.params.poolTokens, fyToken.decimals)
-  pool.poolTokens += toDecimal(event.params.poolTokens, fyToken.decimals)
+  pool.fyTokenReserves -= toDecimal(event.params.poolTokens, fyToken.decimals);
+  pool.poolTokens += toDecimal(event.params.poolTokens, fyToken.decimals);
 
-  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32())
+  updatePool(fyToken, pool, event.address, event.block.timestamp.toI32());
 
-  pool.save()
+  pool.save();
 }
