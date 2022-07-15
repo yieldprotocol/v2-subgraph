@@ -48,7 +48,7 @@ export function handleTransfer(event: Transfer): void {
     event.transaction.hash.toHex() + "-" + event.transactionLogIndex.toString();
 
   let liquidity = new Liquidity(eventId);
-  liquidity.strategy = Strategy.load(event.address.toHexString()).id;
+  liquidity.strategy = event.address.toHexString();
   liquidity.from = event.params.from;
   liquidity.to = event.params.to;
   liquidity.timestamp = event.block.timestamp;
