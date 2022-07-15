@@ -118,3 +118,21 @@ templates:
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
+  - name: Strategy
+    kind: ethereum/contract
+    network: arbitrum-one
+    source:
+      abi: Strategy
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      file: ./src/strategy.ts
+      entities:
+        - Strategy
+      abis:
+        - name: Strategy
+          file: ./abis/Strategy.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
