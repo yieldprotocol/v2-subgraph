@@ -1,43 +1,65 @@
-import { Address } from "@graphprotocol/graph-ts"
-import { PoolCreated } from "../generated/PoolFactory/PoolFactory"
-import { FYToken, Pool } from "../generated/schema"
-import { Pool as PoolTemplate } from '../generated/templates'
-import { Pool as PoolContract } from "../generated/templates/Pool/Pool"
-import { createFYToken } from "./fytoken-factory"
-import { ZERO, ONE } from "./lib"
+import { Address, BigDecimal } from "@graphprotocol/graph-ts";
+import { PoolCreated } from "../generated/PoolFactory/PoolFactory";
+import { FYToken, Pool } from "../generated/schema";
+import { Pool as PoolTemplate } from "../generated/templates";
+import { Pool as PoolContract } from "../generated/templates/Pool/Pool";
+import { createFYToken } from "./fytoken-factory";
+import { ZERO, ONE } from "./lib";
 
 export function handlePoolCreated(event: PoolCreated): void {
-  createPool(event.params.pool)
+  createPool(event.params.pool);
 }
 
 export function createPool(poolAddress: Address): Pool {
-  let pool = new Pool(poolAddress.toHexString())
-  let poolContract = PoolContract.bind(poolAddress)
+  let pool = new Pool(poolAddress.toHexString());
+  let poolContract = PoolContract.bind(poolAddress);
 
-  pool.base = poolContract.base()
-  let fyTokenAddress = poolContract.fyToken()
-  pool.fyToken = fyTokenAddress.toHexString()
+  let baseRes = poolContract.base();
+  pool.base = baseRes;
 
-  if (!FYToken.load(pool.fyToken)) {
-    createFYToken(fyTokenAddress)
+  let sharesToken = poolContract.try_sharesToken();
+
+  if (sharesToken.reverted) {
+    pool.sharesToken = baseRes;
+  } else {
+    pool.sharesToken = sharesToken.value;
   }
 
-  pool.fyTokenReserves = ZERO.toBigDecimal()
-  pool.fyTokenVirtualReserves = ZERO.toBigDecimal()
-  pool.baseReserves = ZERO.toBigDecimal()
-  pool.apr = ZERO.toBigDecimal()
-  pool.currentFYTokenPriceInBase = ZERO.toBigDecimal()
+  let fyTokenAddress = poolContract.fyToken();
+  pool.fyToken = fyTokenAddress.toHexString();
 
-  pool.poolTokens = ZERO.toBigDecimal()
+  if (!FYToken.load(pool.fyToken)) {
+    createFYToken(fyTokenAddress);
+  }
 
-  pool.totalVolumeInBase = ZERO.toBigDecimal()
-  pool.totalTradingFeesInBase = ZERO.toBigDecimal()
-  pool.tvlInBase = ZERO.toBigDecimal()
-  pool.invariant = ONE.toBigDecimal()
-  pool.lastUpdated = 0
-  pool.save()
+  pool.fyTokenReserves = ZERO.toBigDecimal();
+  pool.fyTokenVirtualReserves = ZERO.toBigDecimal();
+  pool.baseReserves = ZERO.toBigDecimal();
+  pool.apr = ZERO.toBigDecimal();
+  pool.currentFYTokenPriceInBase = ZERO.toBigDecimal();
 
-  PoolTemplate.create(poolAddress)
+  pool.poolTokens = ZERO.toBigDecimal();
 
-  return pool
+  pool.totalVolumeInBase = ZERO.toBigDecimal();
+  pool.totalTradingFeesInBase = ZERO.toBigDecimal();
+  pool.tvlInBase = ZERO.toBigDecimal();
+
+  let invariant: BigDecimal;
+  let invariantResult = poolContract.try_invariant();
+
+  if (invariantResult.reverted) {
+    invariant = ONE.toBigDecimal();
+  } else {
+    invariant = invariantResult.value.toBigDecimal();
+  }
+
+  pool.invariant = invariant;
+  pool.initInvariant = invariant;
+
+  pool.lastUpdated = 0;
+  pool.save();
+
+  PoolTemplate.create(poolAddress);
+
+  return pool;
 }

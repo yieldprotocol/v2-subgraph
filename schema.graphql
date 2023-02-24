@@ -72,12 +72,17 @@ type FYToken @entity {
 type Pool @entity {
   id: ID!
   base: Bytes!
+  sharesToken: Bytes!
   fyToken: FYToken!
 
   fyTokenReserves: BigDecimal!
   fyTokenVirtualReserves: BigDecimal!
   baseReserves: BigDecimal!
   apr: BigDecimal!
+  lendAPR: BigDecimal!
+  borrowAPR: BigDecimal!
+  feeAPR: BigDecimal!
+  fyTokenInterestAPR: BigDecimal!
   currentFYTokenPriceInBase: BigDecimal!
 
   poolTokens: BigDecimal!
@@ -88,6 +93,7 @@ type Pool @entity {
   tvlInBase: BigDecimal!
 
   invariant: BigDecimal!
+  initInvariant: BigDecimal!
 
   lastUpdated: Int!
 }
