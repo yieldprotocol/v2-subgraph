@@ -224,12 +224,10 @@ function updatePool(
     pool.feeAPR = BigInt.fromI32(0).toBigDecimal();
   } else {
     pool.invariant = currInvariantResult.value.toBigDecimal();
-    pool.feeAPR = pool.initInvariant
-      ? calcAPR(
-          currInvariantResult.value.toBigDecimal().div(pool.initInvariant),
-          timeTillMaturity
-        )
-      : BigInt.fromI32(0).toBigDecimal();
+    pool.feeAPR = calcAPR(
+      currInvariantResult.value.toBigDecimal().div(pool.initInvariant),
+      timeTillMaturity
+    );
   }
 
   pool.lastUpdated = timestamp;
