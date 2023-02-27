@@ -19,6 +19,7 @@ import { getGlobalStats } from "./global";
 let minimumUpdateTime = new Map<string, i32>();
 // Only update arbitrum once per day, due to slow archive queries
 minimumUpdateTime.set("arbitrum-one", 60 * 60);
+minimumUpdateTime.set("ethereum", 60 * 60);
 
 let SECONDS_PER_YEAR: f64 = 365 * 24 * 60 * 60;
 let k = (1 as f64) / ((4 * 365 * 24 * 60 * 60) as f64); // 1 / seconds in four years
@@ -158,14 +159,14 @@ function updatePool(
   let poolContract = PoolContract.bind(poolAddress);
 
   let sellBasePreview: BigDecimal;
-  let buyBasePreview: BigDecimal;
+  let sellFYTokenPreview: BigDecimal;
   let lendAPR: BigDecimal;
 
   if (fyToken.maturity < timestamp) {
     sellBasePreview = BigInt.fromI32(1).toBigDecimal();
-    buyBasePreview = BigInt.fromI32(1).toBigDecimal();
+    sellFYTokenPreview = BigInt.fromI32(1).toBigDecimal();
   } else {
-    // for lend estimate (fyToken out) and fyToken price estimate
+    // for lend estimate (fyToken out)
     let sellBaseResult = poolContract.try_sellBasePreview(
       BigInt.fromI32(10).pow(fyToken.decimals as u8)
     );
@@ -176,19 +177,19 @@ function updatePool(
       sellBasePreview = toDecimal(sellBaseResult.value, fyToken.decimals);
     }
 
-    // for borrow estimate (base out)
-    let buyBaseResult = poolContract.try_buyBasePreview(
+    // for borrow estimate (base out for specified fyToken in)
+    let sellFYTokenResult = poolContract.try_sellFYTokenPreview(
       BigInt.fromI32(10).pow(fyToken.decimals as u8)
     );
 
-    if (buyBaseResult.reverted) {
-      buyBasePreview = BigInt.fromI32(0).toBigDecimal();
+    if (sellFYTokenResult.reverted) {
+      sellFYTokenPreview = BigInt.fromI32(0).toBigDecimal();
     } else {
-      buyBasePreview = toDecimal(buyBaseResult.value, fyToken.decimals);
+      sellFYTokenPreview = toDecimal(sellFYTokenResult.value, fyToken.decimals);
     }
   }
 
-  pool.currentFYTokenPriceInBase = buyBasePreview; // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms
+  pool.currentFYTokenPriceInBase = sellFYTokenPreview; // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms
   pool.tvlInBase = pool.baseReserves
     .plus(pool.fyTokenReserves)
     .times(pool.currentFYTokenPriceInBase);
@@ -197,7 +198,7 @@ function updatePool(
     fyToken.maturity < timestamp ? 0 : fyToken.maturity - timestamp;
 
   pool.borrowAPR = calcAPR(
-    1 / parseFloat(buyBasePreview.toString()), // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms, so price ratio is 1 / .99
+    1 / parseFloat(sellFYTokenPreview.toString()), // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms, so price ratio is 1 / .99
     timeTillMaturity
   );
   lendAPR = calcAPR(
