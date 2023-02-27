@@ -196,7 +196,11 @@ function updatePool(
     fyToken.maturity < timestamp ? 0 : fyToken.maturity - timestamp;
 
   pool.borrowAPR = calcAPR(
-    1 / parseFloat(buyBasePreview.toString()), // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms, so price ratio is 1 / .99
+    parseFloat(
+      BigInt.fromI32(10)
+        .pow(fyToken.decimals as u8)
+        .toString()
+    ) / parseFloat(buyBasePreview.toString()), // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms, so price ratio is 1 / .99
     timeTillMaturity
   );
   lendAPR = calcAPR(
