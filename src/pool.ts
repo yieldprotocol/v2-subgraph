@@ -19,7 +19,7 @@ import { getGlobalStats } from "./global";
 let minimumUpdateTime = new Map<string, i32>();
 // Only update arbitrum once per day, due to slow archive queries
 minimumUpdateTime.set("arbitrum-one", 60 * 60);
-minimumUpdateTime.set("ethereum", 60 * 60);
+minimumUpdateTime.set("mainnet", 60 * 60);
 
 let SECONDS_PER_YEAR: f64 = 365 * 24 * 60 * 60;
 let k = (1 as f64) / ((4 * 365 * 24 * 60 * 60) as f64); // 1 / seconds in four years
