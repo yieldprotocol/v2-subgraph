@@ -3,6 +3,7 @@ import {
   BigInt,
   BigDecimal,
   dataSource,
+  log,
 } from "@graphprotocol/graph-ts";
 import {
   Pool as PoolContract,
@@ -11,13 +12,14 @@ import {
   Liquidity as LiquidityEvent,
 } from "../generated/templates/Pool/Pool";
 import { Asset, Pool, FYToken, Trade } from "../generated/schema";
-import { EIGHTEEN_DECIMALS, toDecimal, ZERO } from "./lib";
+import { toDecimal, ZERO } from "./lib";
 import { getOrCreateAccount } from "./accounts";
 import { getGlobalStats } from "./global";
 
 let minimumUpdateTime = new Map<string, i32>();
 // Only update arbitrum once per day, due to slow archive queries
 minimumUpdateTime.set("arbitrum-one", 60 * 60);
+minimumUpdateTime.set("mainnet", 60 * 60);
 
 let SECONDS_PER_YEAR: f64 = 365 * 24 * 60 * 60;
 let k = (1 as f64) / ((4 * 365 * 24 * 60 * 60) as f64); // 1 / seconds in four years
@@ -147,61 +149,110 @@ function updatePool(
   // yieldSingleton.poolTLVInDai -= (fyToken.poolDaiReserves + fyToken.poolFYDaiValueInDai)
   let network = dataSource.network();
   if (minimumUpdateTime.has(network)) {
-    if ((timestamp - pool.lastUpdated) < minimumUpdateTime.get(network)) {
+    let timeElapsed = timestamp - pool.lastUpdated;
+    let minimumUpdateTimeForNetwork = minimumUpdateTime.get(network);
+    if (timeElapsed < minimumUpdateTimeForNetwork) {
       return;
     }
   }
 
   let poolContract = PoolContract.bind(poolAddress);
 
-  let fyDaiPriceInBase: BigDecimal;
+  let sellBasePreview: BigDecimal;
+  let sellFYTokenPreview: BigDecimal;
+  let lendAPR: BigDecimal;
+
   if (fyToken.maturity < timestamp) {
-    fyDaiPriceInBase = BigInt.fromI32(1).toBigDecimal();
+    sellBasePreview = BigInt.fromI32(1).toBigDecimal();
+    sellFYTokenPreview = BigInt.fromI32(1).toBigDecimal();
   } else {
-    let buyPriceResult = poolContract.try_sellFYTokenPreview(
-      BigInt.fromI32(10).pow((fyToken.decimals as u8) - 2)
+    // for lend estimate (fyToken out)
+    let sellBaseResult = poolContract.try_sellBasePreview(
+      BigInt.fromI32(10).pow(fyToken.decimals as u8)
     );
 
-    if (buyPriceResult.reverted) {
-      fyDaiPriceInBase = BigInt.fromI32(0).toBigDecimal();
+    if (sellBaseResult.reverted) {
+      sellBasePreview = BigInt.fromI32(0).toBigDecimal();
     } else {
-      fyDaiPriceInBase = toDecimal(
-        buyPriceResult.value * BigInt.fromI32(100),
-        fyToken.decimals
-      );
+      sellBasePreview = toDecimal(sellBaseResult.value, fyToken.decimals);
+    }
+
+    // for borrow estimate (base out for specified fyToken in)
+    let sellFYTokenResult = poolContract.try_sellFYTokenPreview(
+      BigInt.fromI32(10).pow(fyToken.decimals as u8)
+    );
+
+    if (sellFYTokenResult.reverted) {
+      sellFYTokenPreview = BigInt.fromI32(0).toBigDecimal();
+    } else {
+      sellFYTokenPreview = toDecimal(sellFYTokenResult.value, fyToken.decimals);
     }
   }
-  pool.currentFYTokenPriceInBase = fyDaiPriceInBase;
-  pool.tvlInBase =
-    pool.baseReserves + pool.fyTokenReserves * pool.currentFYTokenPriceInBase;
+
+  pool.currentFYTokenPriceInBase = sellFYTokenPreview; // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms
+  pool.tvlInBase = pool.baseReserves
+    .plus(pool.fyTokenReserves)
+    .times(pool.currentFYTokenPriceInBase);
 
   let timeTillMaturity =
     fyToken.maturity < timestamp ? 0 : fyToken.maturity - timestamp;
-  pool.apr = yieldAPR(
-    parseFloat(fyDaiPriceInBase.toString()),
+
+  pool.borrowAPR = calcAPR(
+    1 / parseFloat(sellFYTokenPreview.toString()), // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms, so price ratio is 1 / .99
     timeTillMaturity
   );
-  pool.invariant = calculateInvariant(
-    pool.baseReserves,
-    pool.fyTokenVirtualReserves,
-    pool.poolTokens,
+  lendAPR = calcAPR(
+    parseFloat(sellBasePreview.toString()), // i.e. 101 fyToken out for 100 base in implies base price of 1.01 in fyToken terms
     timeTillMaturity
   );
+  pool.apr = lendAPR;
+  // fyTokenInterestAPR is interest rate of the fyToken portion of the pool (the ratio of fyToken in base to total value)
+  pool.fyTokenInterestAPR = lendAPR.times(
+    pool.fyTokenReserves
+      .times(pool.currentFYTokenPriceInBase)
+      .div(pool.tvlInBase)
+  );
+  pool.lendAPR = lendAPR;
+
+  // calculate fees apr
+  let currInvariantResult = poolContract.try_invariant();
+
+  if (currInvariantResult.reverted) {
+    pool.invariant = calculateInvariant(
+      pool.baseReserves,
+      pool.fyTokenVirtualReserves,
+      pool.poolTokens,
+      timeTillMaturity
+    );
+
+    pool.feeAPR = BigInt.fromI32(0).toBigDecimal();
+  } else {
+    pool.invariant = currInvariantResult.value.toBigDecimal();
+    pool.feeAPR = calcAPR(
+      parseFloat(
+        currInvariantResult.value
+          .toBigDecimal()
+          .div(pool.initInvariant)
+          .toString()
+      ),
+      timeTillMaturity
+    );
+  }
+
   pool.lastUpdated = timestamp;
 }
 
 // Adapted from https://github.com/yieldprotocol/fyDai-frontend/blob/master/src/hooks/mathHooks.ts#L219
-function yieldAPR(fyDaiPriceInBase: f64, timeTillMaturity: i32): BigDecimal {
+function calcAPR(priceRatio: f64, timeTillMaturity: i32): BigDecimal {
   if (timeTillMaturity < 0) {
     return ZERO.toBigDecimal();
   }
 
   let propOfYear = (timeTillMaturity as f64) / SECONDS_PER_YEAR;
-  let priceRatio = 1 / fyDaiPriceInBase;
   let powRatio = 1 / propOfYear;
   let apr = Math.pow(priceRatio, powRatio) - 1;
 
-  if (apr > 0 && apr < 100) {
+  if (apr > 0) {
     let aprPercent = apr * 100;
     return BigDecimal.fromString(aprPercent.toString());
   }
@@ -258,7 +309,7 @@ export function handleTrade(event: TradeEvent): void {
   );
   pool.totalTradingFeesInBase += fee;
 
-  let baseVolume = toDecimal(event.params.bases, fyToken.decimals);
+  let baseVolume = toDecimal(event.params.base, fyToken.decimals);
   if (baseVolume.lt(ZERO.toBigDecimal())) {
     baseVolume = baseVolume.neg();
   }
@@ -275,7 +326,7 @@ export function handleTrade(event: TradeEvent): void {
   trade.pool = event.address.toHexString();
   trade.from = event.params.from;
   trade.to = event.params.to;
-  trade.amountBaseToken = toDecimal(event.params.bases, baseToken.decimals);
+  trade.amountBaseToken = toDecimal(event.params.base, baseToken.decimals);
   trade.amountFYToken = toDecimal(event.params.fyTokens, baseToken.decimals);
   trade.feeInBase = fee;
 
