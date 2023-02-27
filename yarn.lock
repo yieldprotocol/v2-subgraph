@@ -49,12 +49,12 @@
     "tmp-promise" "^3.0.2"
     "yaml" "^1.5.1"
 
-"@graphprotocol/graph-ts@^0.20.0":
-  "integrity" "sha512-+R0Tu/MD4Fiq0Fo+v1l+xznz+ZrciQKWlzMtXjDrhM70vlMNVL9wDmf90MVFYpslgqIfw024hT6XwlmyNyOWbQ=="
-  "resolved" "https://registry.npmjs.org/@graphprotocol/graph-ts/-/graph-ts-0.20.0.tgz"
-  "version" "0.20.0"
+"@graphprotocol/graph-ts@^0.20.1":
+  "integrity" "sha512-JATb0tERXt+JZUYuW9rwfnLzIM4EOBHf/EEZir5JMiIVMP55CoOyQGAwH2dvKSm5O8WQ1BfdbnOvk7YNVMFHsg=="
+  "resolved" "https://registry.npmjs.org/@graphprotocol/graph-ts/-/graph-ts-0.20.1.tgz"
+  "version" "0.20.1"
   dependencies:
-    "assemblyscript" "git+https://github.com/AssemblyScript/assemblyscript.git#36040d5b5312f19a025782b5e36663823494c2f3"
+    "assemblyscript" "git+https://github.com/AssemblyScript/assemblyscript.git#v0.6"
 
 "@protobufjs/utf8@^1.1.0":
   "integrity" "sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA= sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw=="
@@ -198,7 +198,7 @@
   dependencies:
     "safer-buffer" "~2.1.0"
 
-"assemblyscript@git+https://github.com/AssemblyScript/assemblyscript.git#36040d5b5312f19a025782b5e36663823494c2f3", "assemblyscript@git+https://github.com/AssemblyScript/assemblyscript.git#v0.6":
+"assemblyscript@git+https://github.com/AssemblyScript/assemblyscript.git#v0.6":
   "integrity" "sha512-uN/j5+UHypg63TP0tFSiMoCvpeSW8pAp2A4UFXYgpVNdR07kUFIltMtZaQXmT5T0sjLwf1L5ZWM0TyHZcD0yuA=="
   "resolved" "git+ssh://git@github.com/AssemblyScript/assemblyscript.git#36040d5b5312f19a025782b5e36663823494c2f3"
   "version" "0.6.0"

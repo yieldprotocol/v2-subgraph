@@ -147,7 +147,9 @@ function updatePool(
   // yieldSingleton.poolTLVInDai -= (fyToken.poolDaiReserves + fyToken.poolFYDaiValueInDai)
   let network = dataSource.network();
   if (minimumUpdateTime.has(network)) {
-    if (timestamp - pool.lastUpdated < minimumUpdateTime.get(network)) {
+    let timeElapsed = timestamp - pool.lastUpdated;
+    let minimumUpdateTimeForNetwork = minimumUpdateTime.get(network);
+    if (timeElapsed < minimumUpdateTimeForNetwork) {
       return;
     }
   }
@@ -225,7 +227,12 @@ function updatePool(
   } else {
     pool.invariant = currInvariantResult.value.toBigDecimal();
     pool.feeAPR = calcAPR(
-      currInvariantResult.value.toBigDecimal().div(pool.initInvariant),
+      parseFloat(
+        currInvariantResult.value
+          .toBigDecimal()
+          .div(pool.initInvariant)
+          .toString()
+      ),
       timeTillMaturity
     );
   }
@@ -300,7 +307,7 @@ export function handleTrade(event: TradeEvent): void {
   );
   pool.totalTradingFeesInBase += fee;
 
-  let baseVolume = toDecimal(event.params.bases, fyToken.decimals);
+  let baseVolume = toDecimal(event.params.base, fyToken.decimals);
   if (baseVolume.lt(ZERO.toBigDecimal())) {
     baseVolume = baseVolume.neg();
   }
@@ -317,7 +324,7 @@ export function handleTrade(event: TradeEvent): void {
   trade.pool = event.address.toHexString();
   trade.from = event.params.from;
   trade.to = event.params.to;
-  trade.amountBaseToken = toDecimal(event.params.bases, baseToken.decimals);
+  trade.amountBaseToken = toDecimal(event.params.base, baseToken.decimals);
   trade.amountFYToken = toDecimal(event.params.fyTokens, baseToken.decimals);
   trade.feeInBase = fee;
 
