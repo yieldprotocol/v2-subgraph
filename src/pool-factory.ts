@@ -36,6 +36,10 @@ export function createPool(poolAddress: Address): Pool {
   pool.fyTokenVirtualReserves = ZERO.toBigDecimal();
   pool.baseReserves = ZERO.toBigDecimal();
   pool.apr = ZERO.toBigDecimal();
+  pool.lendAPR = ZERO.toBigDecimal();
+  pool.borrowAPR = ZERO.toBigDecimal();
+  pool.feeAPR = ZERO.toBigDecimal();
+  pool.fyTokenInterestAPR = ZERO.toBigDecimal();
   pool.currentFYTokenPriceInBase = ZERO.toBigDecimal();
 
   pool.poolTokens = ZERO.toBigDecimal();
