@@ -6,7 +6,7 @@ import { createStrategy, isStrategy } from "./strategy";
 export function handlePoolAdded(event: PoolAdded): void {
   let pool = Pool.load(event.params.pool.toHex());
   if (!pool) {
-    createPool(event.params.pool);
+    createPool(event.params.pool, event.block.timestamp);
   }
 }
 
