@@ -7,10 +7,10 @@ import { createFYToken } from "./fytoken-factory";
 import { ZERO, ONE } from "./lib";
 
 export function handlePoolCreated(event: PoolCreated): void {
-  createPool(event.params.pool);
+  createPool(event.params.pool, event.block.timestamp.toI32());
 }
 
-export function createPool(poolAddress: Address): Pool {
+export function createPool(poolAddress: Address, timestamp: BigInt): Pool {
   let pool = new Pool(poolAddress.toHexString());
   let poolContract = PoolContract.bind(poolAddress);
 
@@ -61,6 +61,7 @@ export function createPool(poolAddress: Address): Pool {
   pool.initInvariant = invariant;
 
   pool.lastUpdated = 0;
+  pool.createdAtTimestamp = timestamp;
   pool.save();
 
   PoolTemplate.create(poolAddress);

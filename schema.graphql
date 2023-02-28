@@ -96,6 +96,7 @@ type Pool @entity {
   initInvariant: BigDecimal!
 
   lastUpdated: Int!
+  createdAtTimestamp: Int!
 }
 
 type Strategy @entity {

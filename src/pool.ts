@@ -239,7 +239,7 @@ function updatePool(
           .div(pool.initInvariant)
           .toString()
       ),
-      timeTillMaturity
+      timestamp - pool.createdAtTimestamp
     );
   }
 
