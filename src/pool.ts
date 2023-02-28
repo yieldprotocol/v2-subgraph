@@ -197,21 +197,25 @@ function updatePool(
   let timeTillMaturity =
     fyToken.maturity < timestamp ? 0 : fyToken.maturity - timestamp;
 
-  pool.borrowAPR = calcAPR(
-    1 / parseFloat(sellFYTokenPreview.toString()), // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms, so price ratio is 1 / .99
-    timeTillMaturity
-  );
+  pool.borrowAPR = sellFYTokenPreview.gt(BigDecimal.fromString("0"))
+    ? calcAPR(
+        1 / parseFloat(sellFYTokenPreview.toString()), // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms, so price ratio is 1 / .99
+        timeTillMaturity
+      )
+    : ZERO.toBigDecimal();
   lendAPR = calcAPR(
     parseFloat(sellBasePreview.toString()), // i.e. 101 fyToken out for 100 base in implies base price of 1.01 in fyToken terms
     timeTillMaturity
   );
   pool.apr = lendAPR;
   // fyTokenInterestAPR is interest rate of the fyToken portion of the pool (the ratio of fyToken in base to total value)
-  pool.fyTokenInterestAPR = lendAPR.times(
-    pool.fyTokenReserves
-      .times(pool.currentFYTokenPriceInBase)
-      .div(pool.tvlInBase)
-  );
+  pool.fyTokenInterestAPR = pool.tvlInBase.gt(BigDecimal.fromString("0"))
+    ? lendAPR.times(
+        pool.fyTokenReserves
+          .times(pool.currentFYTokenPriceInBase)
+          .div(pool.tvlInBase)
+      )
+    : ZERO.toBigDecimal();
   pool.lendAPR = lendAPR;
 
   // calculate fees apr
