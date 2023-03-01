@@ -4,7 +4,7 @@ import { FYToken, Pool } from "../generated/schema";
 import { Pool as PoolTemplate } from "../generated/templates";
 import { Pool as PoolContract } from "../generated/templates/Pool/Pool";
 import { createFYToken } from "./fytoken-factory";
-import { ZERO, ONE } from "./lib";
+import { ZERO, ONE, toDecimal } from "./lib";
 
 export function handlePoolCreated(event: PoolCreated): void {
   createPool(event.params.pool, event.block.timestamp);
@@ -13,6 +13,12 @@ export function handlePoolCreated(event: PoolCreated): void {
 export function createPool(poolAddress: Address, timestamp: BigInt): Pool {
   let pool = new Pool(poolAddress.toHexString());
   let poolContract = PoolContract.bind(poolAddress);
+  let decimals = poolContract.decimals();
+  pool.decimals = decimals;
+  pool.ts = poolContract.ts();
+  pool.g1 = poolContract.g1();
+  pool.g2 = poolContract.g2();
+  pool.isTv = false;
 
   let baseRes = poolContract.base();
   pool.base = baseRes;
@@ -48,6 +54,7 @@ export function createPool(poolAddress: Address, timestamp: BigInt): Pool {
   pool.totalTradingFeesInBase = ZERO.toBigDecimal();
   pool.tvlInBase = ZERO.toBigDecimal();
 
+  // invariant init
   let invariant: BigDecimal;
   let invariantResult = poolContract.try_invariant();
 
@@ -59,6 +66,26 @@ export function createPool(poolAddress: Address, timestamp: BigInt): Pool {
 
   pool.invariant = invariant;
   pool.initInvariant = invariant;
+
+  // if yieldspace tv
+  if (pool.sharesToken !== pool.base) {
+    pool.isTv = true;
+    let c = poolContract.try_getC();
+    let mu = poolContract.try_mu();
+    let currentSharePrice = poolContract.try_getCurrentSharePrice();
+
+    if (!c.reverted) {
+      pool.c = c.value;
+    }
+
+    if (!mu.reverted) {
+      pool.mu = mu.value;
+    }
+
+    if (!currentSharePrice.reverted) {
+      pool.currentSharePrice = toDecimal(currentSharePrice.value, decimals);
+    }
+  }
 
   pool.lastUpdated = 0;
   pool.createdAtTimestamp = timestamp.toI32();

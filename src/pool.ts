@@ -161,6 +161,18 @@ function updatePool(
   let sellBasePreview: BigDecimal;
   let sellFYTokenPreview: BigDecimal;
   let lendAPR: BigDecimal;
+  let currentSharePrice: BigDecimal;
+
+  if (pool.isTv) {
+    let currentSharePriceRes = poolContract.try_getCurrentSharePrice();
+
+    if (!currentSharePriceRes.reverted) {
+      currentSharePrice = toDecimal(currentSharePriceRes.value, pool.decimals);
+    } else {
+      currentSharePrice = BigDecimal.fromString("1");
+    }
+    pool.currentSharePrice = currentSharePrice;
+  }
 
   if (fyToken.maturity < timestamp) {
     sellBasePreview = BigInt.fromI32(1).toBigDecimal();
@@ -191,6 +203,7 @@ function updatePool(
 
   pool.currentFYTokenPriceInBase = sellFYTokenPreview; // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms
   pool.tvlInBase = pool.baseReserves
+    .times(currentSharePrice! || BigDecimal.fromString("1")) // if isTv, this is in shares, not base, so need to convert to base
     .plus(pool.fyTokenReserves)
     .times(pool.currentFYTokenPriceInBase);
 

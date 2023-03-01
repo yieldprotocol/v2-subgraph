@@ -74,6 +74,7 @@ type Pool @entity {
   base: Bytes!
   sharesToken: Bytes!
   fyToken: FYToken!
+  decimals: Int!
 
   fyTokenReserves: BigDecimal!
   fyTokenVirtualReserves: BigDecimal!
@@ -94,6 +95,15 @@ type Pool @entity {
 
   invariant: BigDecimal!
   initInvariant: BigDecimal!
+
+  ts: BigInt!
+  g1: BigInt!
+  g2: BigInt!
+  c: BigInt
+  mu: BigInt
+  currentSharePrice: BigDecimal
+
+  isTv: Boolean!
 
   lastUpdated: Int!
   createdAtTimestamp: Int!
