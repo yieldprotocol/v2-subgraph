@@ -162,6 +162,7 @@ function updatePool(
   let sellFYTokenPreview: BigDecimal;
   let lendAPR: BigDecimal;
   let currentSharePrice: BigDecimal;
+  let baseReserves = pool.baseReserves;
 
   if (pool.isTv) {
     let currentSharePriceRes = poolContract.try_getCurrentSharePrice();
@@ -172,6 +173,10 @@ function updatePool(
       currentSharePrice = BigDecimal.fromString("1");
     }
     pool.currentSharePrice = currentSharePrice;
+
+    // convert shares reserves to base
+    baseReserves = pool.baseReserves.times(currentSharePrice);
+    pool.baseReserves = baseReserves;
   }
 
   if (fyToken.maturity < timestamp) {
@@ -202,7 +207,7 @@ function updatePool(
   }
 
   pool.currentFYTokenPriceInBase = sellFYTokenPreview; // i.e. 99 base out for 100 fyToken in implies fyToken price of .99 in base terms
-  pool.tvlInBase = pool.baseReserves
+  pool.tvlInBase = baseReserves
     .times(currentSharePrice! || BigDecimal.fromString("1")) // if isTv, this is in shares, not base, so need to convert to base
     .plus(pool.fyTokenReserves)
     .times(pool.currentFYTokenPriceInBase);
@@ -236,7 +241,7 @@ function updatePool(
 
   if (currInvariantResult.reverted) {
     pool.invariant = calculateInvariant(
-      pool.baseReserves,
+      baseReserves,
       pool.fyTokenVirtualReserves,
       pool.poolTokens,
       timeTillMaturity
@@ -370,8 +375,12 @@ export function handleLiquity(event: LiquidityEvent): void {
   let pool = Pool.load(event.address.toHexString())!;
   let fyToken = FYToken.load(pool.fyToken)!;
 
-  pool.fyTokenReserves -= toDecimal(event.params.poolTokens, fyToken.decimals);
-  pool.poolTokens += toDecimal(event.params.poolTokens, fyToken.decimals);
+  pool.fyTokenReserves = pool.fyTokenReserves.minus(
+    toDecimal(event.params.poolTokens, fyToken.decimals)
+  );
+  pool.poolTokens = pool.poolTokens.plus(
+    toDecimal(event.params.poolTokens, fyToken.decimals)
+  );
 
   updatePool(fyToken, pool, event.address, event.block.timestamp.toI32());
 
