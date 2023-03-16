@@ -9,7 +9,7 @@ import { Strategy, Pool, Liquidity } from "../generated/schema";
 import { ZERO_ADDRESS, toDecimal, ZERO } from "./lib";
 import { updateAccountBalance } from "./accounts";
 
-export function isStrategy(address: Address): Boolean {
+export function isStrategy(address: Address): bool {
   let strategyContract = StrategyContract.bind(address);
   let response = strategyContract.try_nextSeriesId();
   return !response.reverted;
