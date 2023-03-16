@@ -1,9 +1,4 @@
-import {
-  Address,
-  BigDecimal,
-  BigInt,
-  dataSource,
-} from "@graphprotocol/graph-ts";
+import { Address, BigDecimal, BigInt } from "@graphprotocol/graph-ts";
 import {
   NextPoolSet,
   Transfer,
@@ -12,14 +7,15 @@ import { Strategy as StrategyTemplate } from "../generated/templates";
 import { Strategy as StrategyContract } from "../generated/templates/Strategy/Strategy";
 import { Strategy, Pool, Liquidity } from "../generated/schema";
 import { ZERO_ADDRESS, toDecimal, ZERO } from "./lib";
+import { updateAccountBalance } from "./accounts";
 
-export function isStrategy(address: Address): bool {
+export function isStrategy(address: Address): Boolean {
   let strategyContract = StrategyContract.bind(address);
   let response = strategyContract.try_nextSeriesId();
   return !response.reverted;
 }
 
-export function createStrategy(strategyAddress: Address): Strategy {
+export function getOrCreateStrategy(strategyAddress: Address): Strategy {
   let strategy = Strategy.load(strategyAddress.toHexString());
   let strategyContract = StrategyContract.bind(strategyAddress);
 
@@ -40,7 +36,7 @@ export function createStrategy(strategyAddress: Address): Strategy {
     StrategyTemplate.create(strategyAddress);
   }
 
-  return strategy!;
+  return strategy;
 }
 
 export function handleTransfer(event: Transfer): void {
@@ -54,33 +50,36 @@ export function handleTransfer(event: Transfer): void {
   liquidity.timestamp = event.block.timestamp;
 
   // amount of strategy tokens transferred in (positive) or transferred out (negative)
-  let amount: BigDecimal;
+  let amount = BigDecimal.fromString("0");
 
   if (event.params.from == ZERO_ADDRESS) {
     amount = adjustStrategySupply(event.address, event.params.value);
     liquidity.amountStrategyTokens = amount;
+    updateAccountBalance(event.params.from, event.address, amount);
   } else if (event.params.to == ZERO_ADDRESS) {
     amount = adjustStrategySupply(
       event.address,
       event.params.value.times(BigInt.fromI32(-1))
     );
     liquidity.amountStrategyTokens = amount;
+    updateAccountBalance(event.params.to, event.address, amount);
   }
 
   liquidity.save();
 }
 
+// returns amount of strategy tokens transferred in (positive) or transferred out (negative) formatted to decimals
 function adjustStrategySupply(address: Address, amount: BigInt): BigDecimal {
-  let entity = Strategy.load(address.toHexString());
-  let amountDecimal = toDecimal(amount, entity.decimals);
-  entity.totalSupply += amountDecimal;
-  entity.save();
+  let strategy = getOrCreateStrategy(address);
+  let amountDecimal = toDecimal(amount, strategy.decimals);
+  strategy.totalSupply = strategy.totalSupply.plus(amountDecimal);
+  strategy.save();
 
   return amountDecimal;
 }
 
 export function handleUpdatePool(event: NextPoolSet): void {
-  let strategy = Strategy.load(event.address.toHexString());
+  let strategy = getOrCreateStrategy(event.address);
   strategy.currentPool = event.params.pool.toHexString();
   strategy.save();
 }
