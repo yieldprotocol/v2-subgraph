@@ -16,19 +16,17 @@ export function handleFYTokenCreated(event: FYTokenCreated): void {
 export function createFYToken(
   address: Address,
   underlying: Address | null = null,
-  maturity = ZERO
+  maturity = null
 ): FYToken {
   let fyTokenContract = FYTokenContract.bind(address);
-
   let fyToken = new FYToken(address.toHexString());
 
   fyToken.name = fyTokenContract.name();
   fyToken.symbol = fyTokenContract.symbol();
-  fyToken.underlyingAddress =
-    underlying == null ? fyTokenContract.underlying() : underlying;
+  fyToken.underlyingAddress = underlying ?? fyTokenContract.underlying();
   fyToken.underlyingAsset = fyToken.underlyingAddress.toHexString();
   fyToken.underlyingAssetId = fyTokenContract.underlyingId();
-  fyToken.maturity = maturity || fyTokenContract.maturity();
+  fyToken.maturity = maturity ?? fyTokenContract.maturity();
   fyToken.decimals = fyTokenContract.decimals();
   fyToken.totalSupply = ZERO.toBigDecimal();
   fyToken.totalInPools = ZERO.toBigDecimal();
@@ -42,7 +40,7 @@ export function createFYToken(
 export function getOrCreateFYToken(
   address: Address,
   underlyingAssetAddr: Address | null = null,
-  maturity = ZERO
+  maturity = null
 ): FYToken {
   let fyToken = FYToken.load(address.toHexString());
   if (!fyToken) {
