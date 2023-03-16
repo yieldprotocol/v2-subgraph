@@ -31,7 +31,7 @@ export function getOrCreateAccountBalance(
     balance.balance = ZERO_BD;
   }
 
-  return balance;
+  return balance!;
 }
 
 export function updateAccountBalance(
