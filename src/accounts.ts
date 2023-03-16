@@ -1,5 +1,5 @@
-import { Address, BigDecimal } from "@graphprotocol/graph-ts";
-import { Account, AccountBalance, Asset } from "../generated/schema";
+import { Address, BigDecimal, Bytes } from "@graphprotocol/graph-ts";
+import { Account, AccountBalance } from "../generated/schema";
 import { getOrCreateAsset } from "./cauldron";
 import { ZERO_BD } from "./lib";
 
@@ -15,10 +15,11 @@ export function getOrCreateAccount(address: Address): Account {
 
 export function getOrCreateAccountBalance(
   accountAddr: Address,
-  assetAddr: Address
+  assetAddr: Address,
+  assetId: Bytes | null
 ): AccountBalance {
   let account = getOrCreateAccount(accountAddr);
-  let asset = getOrCreateAsset(assetAddr, assetAddr);
+  let asset = getOrCreateAsset(assetAddr, assetId);
   let entityId = account.id + "-" + asset.id;
 
   let balance = AccountBalance.load(entityId);
@@ -36,9 +37,14 @@ export function getOrCreateAccountBalance(
 export function updateAccountBalance(
   accountAddr: Address,
   assetAddr: Address,
+  assetId: Bytes | null,
   balanceChange: BigDecimal
 ): void {
-  let accountBalance = getOrCreateAccountBalance(accountAddr, assetAddr);
+  let accountBalance = getOrCreateAccountBalance(
+    accountAddr,
+    assetAddr,
+    assetId
+  );
   accountBalance.balance = accountBalance.balance.plus(balanceChange);
   accountBalance.save();
 }

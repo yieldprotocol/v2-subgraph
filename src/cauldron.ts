@@ -46,7 +46,10 @@ export function handleAssetAdded(event: AssetAdded): void {
   getOrCreateAsset(event.params.asset, event.params.assetId);
 }
 
-export function getOrCreateAsset(assetAddress: Address, assetId: Bytes): Asset {
+export function getOrCreateAsset(
+  assetAddress: Address,
+  assetId: Bytes | null
+): Asset {
   let asset = Asset.load(assetAddress.toHexString());
 
   if (!asset) {

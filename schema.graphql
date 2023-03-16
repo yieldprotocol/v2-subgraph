@@ -16,7 +16,7 @@ type SeriesEntity @entity {
 
 type Asset @entity {
   id: ID!
-  assetId: Bytes!
+  assetId: Bytes
   name: String!
   symbol: String!
   decimals: Int!
