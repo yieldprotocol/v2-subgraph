@@ -36,7 +36,7 @@ export function getOrCreateStrategy(strategyAddress: Address): Strategy {
     StrategyTemplate.create(strategyAddress);
   }
 
-  return strategy;
+  return strategy!;
 }
 
 export function handleTransfer(event: Transfer): void {
@@ -55,14 +55,14 @@ export function handleTransfer(event: Transfer): void {
   if (event.params.from == ZERO_ADDRESS) {
     amount = adjustStrategySupply(event.address, event.params.value);
     liquidity.amountStrategyTokens = amount;
-    updateAccountBalance(event.params.from, event.address, amount);
+    updateAccountBalance(event.params.to, event.address, null, amount);
   } else if (event.params.to == ZERO_ADDRESS) {
     amount = adjustStrategySupply(
       event.address,
       event.params.value.times(BigInt.fromI32(-1))
     );
     liquidity.amountStrategyTokens = amount;
-    updateAccountBalance(event.params.to, event.address, amount);
+    updateAccountBalance(event.params.from, event.address, null, amount);
   }
 
   liquidity.save();

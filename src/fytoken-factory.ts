@@ -16,7 +16,7 @@ export function handleFYTokenCreated(event: FYTokenCreated): void {
 export function createFYToken(
   address: Address,
   underlying: Address | null = null,
-  maturity = null
+  maturity: i32 = 0
 ): FYToken {
   let fyTokenContract = FYTokenContract.bind(address);
   let fyToken = new FYToken(address.toHexString());
@@ -24,11 +24,10 @@ export function createFYToken(
   fyToken.name = fyTokenContract.name();
   fyToken.symbol = fyTokenContract.symbol();
   fyToken.underlyingAddress =
-    underlying == null ? fyTokenContract.underlying() : underlying;
+    underlying == null ? fyTokenContract.underlying() : underlying!;
   fyToken.underlyingAsset = fyToken.underlyingAddress.toHexString();
   fyToken.underlyingAssetId = fyTokenContract.underlyingId();
-  fyToken.maturity =
-    maturity == null ? fyTokenContract.maturity().toI32() : maturity;
+  fyToken.maturity = maturity || fyTokenContract.maturity().toI32();
   fyToken.decimals = fyTokenContract.decimals();
   fyToken.totalSupply = ZERO.toBigDecimal();
   fyToken.totalInPools = ZERO.toBigDecimal();
@@ -36,17 +35,17 @@ export function createFYToken(
 
   FYTokenTemplate.create(address);
 
-  return fyToken;
+  return fyToken!;
 }
 
 export function getOrCreateFYToken(
   address: Address,
   underlyingAssetAddr: Address | null = null,
-  maturity = null
+  maturity: i32 = 0
 ): FYToken {
   let fyToken = FYToken.load(address.toHexString());
   if (!fyToken) {
     fyToken = createFYToken(address, underlyingAssetAddr, maturity);
   }
-  return fyToken;
+  return fyToken!;
 }
