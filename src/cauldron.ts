@@ -18,11 +18,10 @@ import {
   Collateral,
   SeriesEntity,
   Vault,
-  FYToken,
   Repay,
   Borrow,
 } from "../generated/schema";
-import { createFYToken, getOrCreateFYToken } from "./fytoken-factory";
+import { getOrCreateFYToken } from "./fytoken-factory";
 import { getOrCreateAccount } from "./accounts";
 import { ZERO, toDecimal, ONE } from "./lib";
 
