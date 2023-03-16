@@ -115,6 +115,8 @@ templates:
       abis:
         - name: FYToken
           file: ./abis/FYToken.json
+        - name: IERC20
+          file: ./abis/IERC20.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
@@ -133,6 +135,8 @@ templates:
       abis:
         - name: Strategy
           file: ./abis/Strategy.json
+        - name: IERC20
+          file: ./abis/IERC20.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
