@@ -52,6 +52,8 @@ type Account @entity {
   id: ID!
   vaults: [Vault!]! @derivedFrom(field: "owner")
   numTrades: Int!
+  fyTokenBalances: [AccountBalance!]! @derivedFrom(field: "account")
+  strategyBalances: [AccountBalance!]! @derivedFrom(field: "account")
 }
 
 type FYToken @entity {
@@ -67,6 +69,14 @@ type FYToken @entity {
   pools: [Pool!]! @derivedFrom(field: "fyToken")
 
   totalInPools: BigDecimal!
+}
+
+type AccountBalance @entity {
+  "id equal to ${account}-${assetAddress}"
+  id: ID!
+  account: Account!
+  asset: Asset!
+  balance: BigDecimal!
 }
 
 type Pool @entity {
