@@ -1,6 +1,5 @@
 import { Address, BigInt } from "@graphprotocol/graph-ts";
 import { Transfer } from "../generated/templates/FYToken/FYToken";
-import { Asset, FYToken } from "../generated/schema";
 import { ZERO_ADDRESS, toDecimal } from "./lib";
 import { getOrCreateFYToken } from "./fytoken-factory";
 import { getOrCreateAsset } from "./cauldron";
@@ -22,14 +21,10 @@ function adjustFYTokenSupply(address: Address, amount: BigInt): void {
   fyToken.totalSupply = fyToken.totalSupply.plus(amountDecimal);
   fyToken.save();
 
-  if (!fyToken.underlyingAsset) {
-  }
   let underlying = getOrCreateAsset(
-    fyToken.underlyingAsset!,
+    Address.fromString(fyToken.underlyingAsset),
     fyToken.underlyingAssetId
   );
-  if (underlying) {
-    underlying.totalFYTokens += amountDecimal;
-    underlying.save();
-  }
+  underlying.totalFYTokens = underlying.totalFYTokens.plus(amountDecimal);
+  underlying.save();
 }
