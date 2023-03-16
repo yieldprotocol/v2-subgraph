@@ -35,10 +35,6 @@ export function createPool(poolAddress: Address, timestamp: BigInt): Pool {
   let fyToken = getOrCreateFYToken(fyTokenAddress);
   pool.fyToken = fyToken.id;
 
-  if (!FYToken.load(pool.fyToken)) {
-    createFYToken(fyTokenAddress);
-  }
-
   pool.fyTokenReserves = ZERO.toBigDecimal();
   pool.fyTokenVirtualReserves = ZERO.toBigDecimal();
   pool.baseReserves = ZERO.toBigDecimal();
