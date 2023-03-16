@@ -52,8 +52,7 @@ type Account @entity {
   id: ID!
   vaults: [Vault!]! @derivedFrom(field: "owner")
   numTrades: Int!
-  fyTokenBalances: [AccountBalance!]! @derivedFrom(field: "account")
-  strategyBalances: [AccountBalance!]! @derivedFrom(field: "account")
+  balances: [AccountBalance!]! @derivedFrom(field: "account")
 }
 
 type FYToken @entity {
