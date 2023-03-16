@@ -27,7 +27,8 @@ export function createFYToken(
     underlying == null ? fyTokenContract.underlying() : underlying;
   fyToken.underlyingAsset = fyToken.underlyingAddress.toHexString();
   fyToken.underlyingAssetId = fyTokenContract.underlyingId();
-  fyToken.maturity = maturity == null ? fyTokenContract.maturity() : maturity;
+  fyToken.maturity =
+    maturity == null ? fyTokenContract.maturity().toI32() : maturity;
   fyToken.decimals = fyTokenContract.decimals();
   fyToken.totalSupply = ZERO.toBigDecimal();
   fyToken.totalInPools = ZERO.toBigDecimal();
