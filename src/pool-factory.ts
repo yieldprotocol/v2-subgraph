@@ -1,9 +1,9 @@
 import { Address, BigDecimal, BigInt } from "@graphprotocol/graph-ts";
 import { PoolCreated } from "../generated/PoolFactory/PoolFactory";
-import { FYToken, Pool } from "../generated/schema";
+import { Pool } from "../generated/schema";
 import { Pool as PoolTemplate } from "../generated/templates";
 import { Pool as PoolContract } from "../generated/templates/Pool/Pool";
-import { createFYToken } from "./fytoken-factory";
+import { getOrCreateFYToken } from "./fytoken-factory";
 import { ZERO, ONE, toDecimal } from "./lib";
 
 export function handlePoolCreated(event: PoolCreated): void {
@@ -32,11 +32,8 @@ export function createPool(poolAddress: Address, timestamp: BigInt): Pool {
   }
 
   let fyTokenAddress = poolContract.fyToken();
-  pool.fyToken = fyTokenAddress.toHexString();
-
-  if (!FYToken.load(pool.fyToken)) {
-    createFYToken(fyTokenAddress);
-  }
+  let fyToken = getOrCreateFYToken(fyTokenAddress);
+  pool.fyToken = fyToken.id;
 
   pool.fyTokenReserves = ZERO.toBigDecimal();
   pool.fyTokenVirtualReserves = ZERO.toBigDecimal();

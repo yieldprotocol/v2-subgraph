@@ -1,7 +1,7 @@
 import { PoolAdded, TokenAdded } from "../generated/Ladle/Ladle";
 import { Pool } from "../generated/schema";
 import { createPool } from "./pool-factory";
-import { createStrategy, isStrategy } from "./strategy";
+import { getOrCreateStrategy, isStrategy } from "./strategy";
 
 export function handlePoolAdded(event: PoolAdded): void {
   let pool = Pool.load(event.params.pool.toHex());
@@ -12,6 +12,6 @@ export function handlePoolAdded(event: PoolAdded): void {
 
 export function handleTokenAdded(event: TokenAdded): void {
   if (isStrategy(event.params.token)) {
-    createStrategy(event.params.token);
+    getOrCreateStrategy(event.params.token);
   }
 }

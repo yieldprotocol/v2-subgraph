@@ -18,13 +18,12 @@ import {
   Collateral,
   SeriesEntity,
   Vault,
-  FYToken,
   Repay,
   Borrow,
 } from "../generated/schema";
-import { createFYToken } from "./fytoken-factory";
+import { getOrCreateFYToken } from "./fytoken-factory";
 import { getOrCreateAccount } from "./accounts";
-import { EIGHTEEN_DECIMALS, ZERO, toDecimal, ONE } from "./lib";
+import { ZERO, toDecimal, ONE } from "./lib";
 
 export function assetIdToAddress(cauldronAddress: Address, id: Bytes): Address {
   let cauldron = Cauldron.bind(cauldronAddress);
@@ -46,7 +45,10 @@ export function handleAssetAdded(event: AssetAdded): void {
   getOrCreateAsset(event.params.asset, event.params.assetId);
 }
 
-export function getOrCreateAsset(assetAddress: Address, assetId: Bytes): Asset {
+export function getOrCreateAsset(
+  assetAddress: Address,
+  assetId: Bytes | null
+): Asset {
   let asset = Asset.load(assetAddress.toHexString());
 
   if (!asset) {
@@ -79,13 +81,12 @@ export function handleSeriesAdded(event: SeriesAdded): void {
   series.fyToken = event.params.fyToken.toHexString();
   series.matured = false;
 
-  let fyToken = FYToken.load(event.params.fyToken.toHexString());
-  if (!fyToken) {
-    fyToken = createFYToken(event.params.fyToken);
-  }
+  let fyToken = getOrCreateFYToken(
+    event.params.fyToken,
+    Address.fromString(series.baseAsset)
+  );
 
   series.maturity = fyToken.maturity;
-
   series.save();
 }
 
