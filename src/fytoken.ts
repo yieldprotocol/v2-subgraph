@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt } from "@graphprotocol/graph-ts";
 import { Transfer } from "../generated/templates/FYToken/FYToken";
-import { ZERO_ADDRESS, toDecimal } from "./lib";
+import { ZERO_ADDRESS, toDecimal, NEG_ONE_BD } from "./lib";
 import { getOrCreateFYToken } from "./fytoken-factory";
 import { getOrCreateAsset } from "./cauldron";
 import { updateAccountBalance } from "./accounts";
@@ -17,6 +17,16 @@ export function handleTransfer(event: Transfer): void {
       event.params.value.times(BigInt.fromI32(-1))
     );
     updateAccountBalance(event.params.from, event.address, null, amountDecimal);
+  } else {
+    let fyToken = getOrCreateFYToken(event.address);
+    amountDecimal = toDecimal(event.params.value, fyToken.decimals);
+    updateAccountBalance(event.params.to, event.address, null, amountDecimal);
+    updateAccountBalance(
+      event.params.from,
+      event.address,
+      null,
+      amountDecimal.times(NEG_ONE_BD)
+    );
   }
 }
 

@@ -6,7 +6,7 @@ import {
 import { Strategy as StrategyTemplate } from "../generated/templates";
 import { Strategy as StrategyContract } from "../generated/templates/Strategy/Strategy";
 import { Strategy, Pool, Liquidity } from "../generated/schema";
-import { ZERO_ADDRESS, toDecimal, ZERO } from "./lib";
+import { ZERO_ADDRESS, toDecimal, ZERO, NEG_ONE_BD } from "./lib";
 import { updateAccountBalance } from "./accounts";
 
 export function isStrategy(address: Address): bool {
@@ -50,19 +50,29 @@ export function handleTransfer(event: Transfer): void {
   liquidity.timestamp = event.block.timestamp;
 
   // amount of strategy tokens transferred in (positive) or transferred out (negative)
-  let amount = BigDecimal.fromString("0");
+  let amountDecimal = BigDecimal.fromString("0");
 
   if (event.params.from == ZERO_ADDRESS) {
-    amount = adjustStrategySupply(event.address, event.params.value);
-    liquidity.amountStrategyTokens = amount;
-    updateAccountBalance(event.params.to, event.address, null, amount);
+    amountDecimal = adjustStrategySupply(event.address, event.params.value);
+    liquidity.amountStrategyTokens = amountDecimal;
+    updateAccountBalance(event.params.to, event.address, null, amountDecimal);
   } else if (event.params.to == ZERO_ADDRESS) {
-    amount = adjustStrategySupply(
+    amountDecimal = adjustStrategySupply(
       event.address,
       event.params.value.times(BigInt.fromI32(-1))
     );
-    liquidity.amountStrategyTokens = amount;
-    updateAccountBalance(event.params.from, event.address, null, amount);
+    liquidity.amountStrategyTokens = amountDecimal;
+    updateAccountBalance(event.params.from, event.address, null, amountDecimal);
+  } else {
+    let strategy = getOrCreateStrategy(event.address);
+    amountDecimal = toDecimal(event.params.value, strategy.decimals);
+    updateAccountBalance(event.params.to, event.address, null, amountDecimal);
+    updateAccountBalance(
+      event.params.from,
+      event.address,
+      null,
+      amountDecimal.times(NEG_ONE_BD)
+    );
   }
 
   liquidity.save();
